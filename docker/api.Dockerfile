@@ -1,0 +1,38 @@
+# ---------- build ----------
+FROM node:22-slim AS build
+RUN corepack enable && corepack prepare pnpm@10.34.4 --activate
+WORKDIR /app
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/db/package.json packages/db/
+COPY apps/api/package.json apps/api/
+RUN pnpm install --frozen-lockfile --filter @premium-hub/shared --filter @premium-hub/db --filter @premium-hub/api
+
+COPY tsconfig.base.json ./
+COPY packages/shared packages/shared
+COPY packages/db packages/db
+COPY apps/api apps/api
+
+RUN pnpm --filter @premium-hub/shared build \
+ && pnpm --filter @premium-hub/db build \
+ && pnpm --filter @premium-hub/api build
+
+# Prune dev dependencies for the runtime image.
+RUN pnpm prune --prod
+
+# ---------- runtime ----------
+FROM node:22-slim
+ENV NODE_ENV=production
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages ./packages
+COPY --from=build /app/apps/api ./apps/api
+COPY --from=build /app/package.json ./package.json
+
+EXPOSE 3001
+# Apply migrations, then start. Migration deploy is idempotent.
+CMD ["/bin/sh", "-c", "node packages/db/node_modules/prisma/build/index.js migrate deploy --schema packages/db/prisma/schema.prisma && node apps/api/dist/main.js"]

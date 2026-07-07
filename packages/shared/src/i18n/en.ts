@@ -1,0 +1,148 @@
+/**
+ * Built-in English bot copy. Every key can be overridden from the admin
+ * panel (/bot-texts) via the `bot_messages` setting; empty overrides fall
+ * back to these defaults.
+ */
+export const en = {
+  // Main reply-keyboard menu buttons
+  'menu.products': '📦 Products',
+  'menu.wallet': '👛 Wallet',
+  'menu.myServices': '🧾 My Services',
+  'menu.orders': '🛒 Orders',
+  'menu.discount': '🎁 Discount Code',
+  'menu.support': '💬 Support',
+  'menu.profile': '👤 Profile',
+  'menu.language': '🌐 Language',
+
+  // Common
+  'common.back': '⬅️ Back',
+  'common.cancel': '❌ Cancel',
+  'common.home': '🏠 Main Menu',
+  'common.cancelled': 'Cancelled. Back to the main menu.',
+  'common.error': 'Something went wrong. Please try again.',
+  'common.useMenu': 'Please use the menu buttons below 👇',
+  'common.rateLimited': 'You are doing that too fast. Please wait a moment and try again.',
+
+  // Start
+  'start.welcome':
+    'Hi {name} 👋\nWelcome to Premium Hub — your store for premium digital services.\nUse the menu below to get started.',
+
+  // Catalog
+  'catalog.chooseCategory': '🗂 Choose a category:',
+  'catalog.chooseProduct': '📦 {category} — choose a product:',
+  'catalog.choosePlan': '📦 {product} — choose a plan:',
+  'catalog.choosePlanWithTabs': '📦 {product} — pick a duration, then a plan:',
+  'catalog.monthTab': '{n} month',
+  'catalog.empty': 'No products are available right now. Please check back later.',
+  'catalog.noPlans': 'This product has no active plans right now.',
+
+  // Wallet
+  'wallet.balance': '👛 Your wallet balance: {balance}',
+  'wallet.chargeButton': '➕ Charge Wallet',
+  'wallet.choosePreset': 'Choose a top-up amount:',
+  'wallet.customAmount': '✏️ Custom amount',
+  'wallet.enterCustomAmount': 'Enter the top-up amount in Toman (numbers only):',
+  'wallet.invalidAmount': 'That is not a valid amount. Please send a positive number, e.g. 150000.',
+
+  // Payment
+  'payment.chooseMethod': 'Amount: {amount}\nChoose a payment method:',
+  'payment.methodManual': '💳 Card-to-card transfer',
+  'payment.methodGateway': '🌐 Online gateway',
+  'payment.gatewayUnavailable': 'The online gateway is not available yet. Please use card-to-card transfer.',
+  'payment.manualInstructions':
+    '💳 Card-to-card payment\n\nAmount: {amount}\nCard number: {card}\nCard holder: {holder}\n{extra}\nAfter paying, send exactly one photo of your receipt.',
+  'payment.manualBankLine': 'Bank: {bank}',
+  'payment.receiptOnlyPhoto': 'Please send your receipt as a single photo. Text or files are not accepted.',
+  'payment.receiptReceived':
+    '✅ Receipt received. Payment #{id} for {amount} is now waiting for admin review. You will be notified once it is checked.',
+  'payment.approvedUser':
+    '✅ Your wallet was charged {amount}.\nNew balance: {balance}',
+  'payment.rejectedUser':
+    '❌ Your payment #{id} for {amount} was rejected. If you believe this is a mistake, contact support.',
+
+  // Checkout
+  'checkout.confirm':
+    '🛒 Purchase summary\n\nProduct: {product}\nPlan: {plan}\nPrice: {amount}\nWallet balance: {balance}\n\nConfirm the purchase?',
+  'checkout.confirmButton': '✅ Confirm purchase',
+  'checkout.discountLine': 'Discount: -{amount}',
+  'checkout.insufficient':
+    'Your wallet balance is not enough.\nPrice: {amount}\nBalance: {balance}\nShortfall: {shortfall}\n\nCharge exactly the shortfall to complete this purchase.',
+  'checkout.chargeShortfall': '➕ Charge {amount}',
+  'checkout.success': '✅ Order #{id} was placed successfully. Amount paid: {amount}',
+  'checkout.outOfStock':
+    'This plan is currently out of stock. Please try again later or contact support.',
+
+  // Delivery
+  'delivery.auto': '🎉 Your service is ready!\n\n{payload}\n\nYou can always find it under "My Services".',
+  'delivery.pending':
+    '📦 Your order #{id} is registered. The service details will be sent to you by our team shortly.',
+  'delivery.manualSent': '📬 Delivery for order #{id}:\n\n{payload}',
+
+  // Orders
+  'orders.title': '🛒 Your orders — tap one for details:',
+  'orders.empty': 'You have no orders yet.',
+  'orders.detail':
+    '🛒 Order #{id}\n\nProduct: {product}\nPlan: {plan}\nTotal: {amount}\nStatus: {status}\nDelivery: {delivery}\nDate: {date}',
+
+  // My Services
+  'services.title': '🧾 Your services — tap one for details:',
+  'services.empty': 'You have no delivered services yet.',
+  'services.detail':
+    '🧾 Service — order #{id}\n\nProduct: {product}\nPlan: {plan}\nDelivered: {date}\n\n{payload}',
+
+  // Discount
+  'discount.prompt': '🎁 Send your discount code:',
+  'discount.invalid': 'This discount code is not valid or has expired.',
+  'discount.applied':
+    '✅ Discount code {code} saved. It will be applied to your next purchase ({value}).',
+  'discount.cleared': 'Your saved discount code was removed.',
+  'discount.percentValue': '{value}% off',
+  'discount.fixedValue': '{value} off',
+
+  // Support
+  'support.prompt': '💬 Write your message for support. It will be answered as soon as possible.',
+  'support.received': '✅ Your message was sent to support. Ticket #{id}.',
+  'support.adminReply': '💬 Support reply (ticket #{id}):\n\n{message}',
+
+  // Profile
+  'profile.info':
+    '👤 Your profile\n\nName: {name}\nTelegram ID: {telegramId}\nUsername: {username}\nStore username: {displayUsername}\nLanguage: {language}\nWallet balance: {balance}\nOrders: {orders}',
+
+  // Language
+  'language.choose': '🌐 Choose your language:',
+  'language.set': '✅ Language set to English.',
+
+  // Admin (Telegram quick panel)
+  'admin.notAllowed': 'You are not an admin.',
+  'admin.panel': '🛠 Admin panel — choose an action:',
+  'admin.pendingPayments': '💳 Pending payments',
+  'admin.pendingDeliveries': '📦 Pending deliveries',
+  'admin.noPendingPayments': 'No pending payments.',
+  'admin.noPendingDeliveries': 'No pending deliveries.',
+  'admin.receiptCaption':
+    '💳 Payment #{id}\nUser: {name} (ID {telegramId})\nAmount: {amount}\nStatus: {status}',
+  'admin.deliveryItem':
+    '📦 Delivery for order #{orderId}\nUser: {name} (ID {telegramId})\nProduct: {product} — {plan}\nUse the admin panel to send the service details.',
+  'admin.approve': '✅ Approve',
+  'admin.reject': '❌ Reject',
+  'admin.decisionApproved': '✅ Payment #{id} approved.',
+  'admin.decisionRejected': '❌ Payment #{id} rejected.',
+  'admin.alreadyDecided': 'Payment #{id} was already {status}.',
+
+  // Status labels
+  'status.order.pending_payment': 'Pending payment',
+  'status.order.paid': 'Paid',
+  'status.order.fulfilling': 'Being prepared',
+  'status.order.delivered': 'Delivered',
+  'status.order.cancelled': 'Cancelled',
+  'status.order.refunded': 'Refunded',
+  'status.payment.pending': 'Pending review',
+  'status.payment.approved': 'Approved',
+  'status.payment.rejected': 'Rejected',
+  'status.payment.failed': 'Failed',
+  'status.payment.cancelled': 'Cancelled',
+  'status.delivery.pending': 'Waiting for delivery',
+  'status.delivery.sent': 'Delivered',
+} as const;
+
+export type MessageKey = keyof typeof en;

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(git --version)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm add *)",
+      "Read(//Users/shayan/**)",
+      "Bash(pnpm --filter @premium-hub/db build)",
+      "Bash(pnpm --filter @premium-hub/api build)",
+      "Bash(open -a Docker)",
+      "Bash(docker info *)",
+      "Bash(break)",
+      "Bash(DATABASE_URL='postgresql://premium_hub:premium_hub@localhost:5433/premium_hub?schema=public' npx prisma migrate dev --name init)",
+      "Bash(pnpm build *)",
+      "Bash(DATABASE_URL='postgresql://premium_hub:premium_hub@localhost:5433/premium_hub?schema=public' ENCRYPTION_KEY='dev-encryption-key-not-for-production' node dist/seed.js)",
+      "Bash(head -30 /tmp/api-smoke.log)",
+      "Read(//private/tmp/**)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm --filter @premium-hub/admin build)",
+      "Bash(awk '{print $2, $11, $12, $13}')",
+      "Bash(sed -i '' \"/^import { InlineKeyboard } from 'grammy';$/d; /^import { formatAmount } from '@premium-hub\\\\/shared';$/d\" apps/api/src/modules/fulfillment/fulfillment.service.ts)",
+      "Bash(sed -i '' \"/^import { formatAmount } from '@premium-hub\\\\/shared';$/d\" apps/api/src/modules/support/support.service.ts)",
+      "Bash(sed -i '' \"s/import { formatAmount, parseAmount } from '@premium-hub\\\\/shared';/import { formatAmount, parseAmount } from '@premium-hub\\\\/shared';/\" apps/api/src/modules/bot/handlers/wallet.handler.ts)"
+    ]
+  }
+}

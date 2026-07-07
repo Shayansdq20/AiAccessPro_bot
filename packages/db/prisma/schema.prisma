@@ -1,0 +1,478 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Language {
+  fa
+  en
+}
+
+enum UserStatus {
+  active
+  blocked
+}
+
+enum LedgerType {
+  credit
+  debit
+  adjustment
+  refund
+}
+
+enum FulfillmentMode {
+  auto_inventory
+  manual_admin
+  hybrid_prefer_inventory
+}
+
+enum ProductKind {
+  account
+  config
+  license
+  gift_card
+  custom
+}
+
+enum InventoryStatus {
+  available
+  reserved
+  delivered
+  retired
+}
+
+enum OrderStatus {
+  pending_payment
+  paid
+  fulfilling
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentType {
+  manual
+  gateway
+}
+
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+  failed
+  cancelled
+}
+
+enum DiscountType {
+  percent
+  fixed
+}
+
+enum DeliveryType {
+  auto_inventory
+  manual
+}
+
+enum DeliveryStatus {
+  pending
+  sent
+}
+
+enum TicketStatus {
+  open
+  answered
+  closed
+}
+
+enum AdminRole {
+  owner
+  support
+  operator
+  catalog_manager
+}
+
+enum SenderType {
+  user
+  admin
+}
+
+// ---------------------------------------------------------------------------
+// Users & wallet
+// ---------------------------------------------------------------------------
+
+model User {
+  id               String     @id @default(cuid())
+  telegramId       BigInt     @unique
+  telegramUsername String?
+  firstName        String?
+  lastName         String?
+  displayUsername  String     @unique
+  language         Language   @default(fa)
+  status           UserStatus @default(active)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  wallet      Wallet?
+  orders      Order[]
+  payments    Payment[]
+  tickets     SupportTicket[]
+  redemptions DiscountRedemption[]
+
+  @@index([telegramUsername])
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  // Cached balance; source of truth is the ledger. Updated in the same tx
+  // as every ledger insert.
+  balance   BigInt   @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ledger WalletLedger[]
+}
+
+model WalletLedger {
+  id           String     @id @default(cuid())
+  walletId     String
+  wallet       Wallet     @relation(fields: [walletId], references: [id])
+  type         LedgerType
+  // Signed amount: credits positive, debits negative.
+  amount       BigInt
+  balanceAfter BigInt
+  // Idempotency key, e.g. "payment:<id>", "order:<id>", "adjust:<uuid>".
+  reference    String     @unique
+  description  String?
+  actorAdminId String?
+  createdAt    DateTime   @default(now())
+
+  @@index([walletId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+model ProductCategory {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  emoji       String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id          String          @id @default(cuid())
+  categoryId  String
+  category    ProductCategory @relation(fields: [categoryId], references: [id])
+  title       String
+  description String?
+  kind        ProductKind     @default(account)
+  // VPN-style duration tabs: price = variant.price * selected months.
+  useDurationTabs Boolean     @default(false)
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  variants ProductVariant[]
+  options  ProductOption[]
+}
+
+model ProductVariant {
+  id              String          @id @default(cuid())
+  productId       String
+  product         Product         @relation(fields: [productId], references: [id])
+  title           String
+  // Integer Toman.
+  price           BigInt
+  fulfillmentMode FulfillmentMode @default(hybrid_prefer_inventory)
+  // Tab grouping label, e.g. "1 month". Variants sharing a group appear
+  // under the same Telegram tab.
+  optionGroup     String?
+  sortOrder       Int             @default(0)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  inventory  InventoryItem[]
+  orderItems OrderItem[]
+}
+
+model ProductOption {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  name      String
+  // Future option builder: list of selectable values with optional price deltas.
+  values    Json?
+  createdAt DateTime @default(now())
+}
+
+model InventoryItem {
+  id              String          @id @default(cuid())
+  variantId       String
+  variant         ProductVariant  @relation(fields: [variantId], references: [id])
+  label           String
+  // AES-256-GCM encrypted payload: "v1:<iv>:<tag>:<ciphertext>" (base64 parts).
+  payloadEnc      String
+  status          InventoryStatus @default(available)
+  reservedOrderId String?
+  deliveredAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  delivery Delivery?
+
+  @@index([variantId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+model Order {
+  id             String       @id @default(cuid())
+  // Short human-friendly number for Telegram display.
+  number         Int          @unique @default(autoincrement())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  status         OrderStatus  @default(pending_payment)
+  subtotal       BigInt
+  discountAmount BigInt       @default(0)
+  total          BigInt
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  items      OrderItem[]
+  deliveries Delivery[]
+  redemption DiscountRedemption?
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id           String          @id @default(cuid())
+  orderId      String
+  order        Order           @relation(fields: [orderId], references: [id])
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  // Snapshots survive later catalog edits/deletes.
+  productTitle String
+  variantTitle String
+  unitPrice    BigInt
+  quantity     Int             @default(1)
+  totalPrice   BigInt
+  // e.g. { "durationMonths": 3, "optionGroup": "1 month" }
+  optionsJson  Json?
+  createdAt    DateTime        @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id               String        @id @default(cuid())
+  number           Int           @unique @default(autoincrement())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  type             PaymentType
+  // Provider registry key: "manual", "zarinpal", later crypto providers.
+  provider         String
+  amount           BigInt
+  status           PaymentStatus @default(pending)
+  providerRef      String?
+  providerMeta     Json?
+  decidedByAdminId String?
+  decidedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  receipt ManualReceipt?
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model ManualReceipt {
+  id                String   @id @default(cuid())
+  paymentId         String   @unique
+  payment           Payment  @relation(fields: [paymentId], references: [id])
+  telegramFileId    String
+  userChatId        BigInt
+  telegramMessageId Int?
+  note              String?
+  createdAt         DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Discounts
+// ---------------------------------------------------------------------------
+
+model DiscountCode {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  type           DiscountType
+  // percent: 1..100, fixed: Toman amount.
+  value          BigInt
+  maxUses        Int?
+  maxUsesPerUser Int?
+  minOrderTotal  BigInt?
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  redemptions DiscountRedemption[]
+  orders      Order[]
+}
+
+model DiscountRedemption {
+  id        String       @id @default(cuid())
+  codeId    String
+  code      DiscountCode @relation(fields: [codeId], references: [id])
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  orderId   String       @unique
+  order     Order        @relation(fields: [orderId], references: [id])
+  amount    BigInt
+  createdAt DateTime     @default(now())
+
+  @@index([codeId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Delivery
+// ---------------------------------------------------------------------------
+
+model Delivery {
+  id              String         @id @default(cuid())
+  orderId         String
+  order           Order          @relation(fields: [orderId], references: [id])
+  type            DeliveryType
+  status          DeliveryStatus @default(pending)
+  inventoryItemId String?        @unique
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  // Encrypted copy of what was sent to the user (auto payload or manual message).
+  payloadEnc      String?
+  sentByAdminId   String?
+  sentAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Support
+// ---------------------------------------------------------------------------
+
+model SupportTicket {
+  id        String       @id @default(cuid())
+  number    Int          @unique @default(autoincrement())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  status    TicketStatus @default(open)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  messages SupportMessage[]
+
+  @@index([status])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+  sender    SenderType
+  adminId   String?
+  body      String
+  createdAt DateTime      @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Admin & system
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         AdminRole @default(support)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions AdminSession[]
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  // e.g. "payment.approve", "wallet.adjust", "catalog.product.delete"
+  action     String
+  entityType String?
+  entityId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// Durable bot conversation/session state (restart-safe flows).
+model BotSession {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// Future live pricing sources (USD->IRT, crypto rates, ...).
+model PriceRate {
+  id        String   @id @default(cuid())
+  source    String
+  pair      String
+  rate      Decimal  @db.Decimal(24, 8)
+  fetchedAt DateTime @default(now())
+
+  @@unique([source, pair])
+}

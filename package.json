@@ -1,0 +1,19 @@
+{
+  "name": "premium-hub",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.34.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm --filter @premium-hub/shared build && pnpm --filter @premium-hub/db build && pnpm --filter @premium-hub/api build && pnpm --filter @premium-hub/admin build",
+    "test": "pnpm -r test",
+    "dev:api": "pnpm --filter @premium-hub/api dev",
+    "dev:admin": "pnpm --filter @premium-hub/admin dev",
+    "db:generate": "pnpm --filter @premium-hub/db generate",
+    "db:migrate": "pnpm --filter @premium-hub/db migrate:dev",
+    "db:deploy": "pnpm --filter @premium-hub/db migrate:deploy",
+    "db:seed": "pnpm --filter @premium-hub/db seed"
+  }
+}
