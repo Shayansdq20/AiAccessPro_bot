@@ -1,5 +1,6 @@
 # ---------- build ----------
 FROM node:22-slim AS build
+ENV CI=true
 RUN corepack enable && corepack prepare pnpm@10.34.4 --activate
 WORKDIR /app
 

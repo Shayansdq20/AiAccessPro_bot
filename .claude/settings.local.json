@@ -23,7 +23,15 @@
       "Bash(awk '{print $2, $11, $12, $13}')",
       "Bash(sed -i '' \"/^import { InlineKeyboard } from 'grammy';$/d; /^import { formatAmount } from '@premium-hub\\\\/shared';$/d\" apps/api/src/modules/fulfillment/fulfillment.service.ts)",
       "Bash(sed -i '' \"/^import { formatAmount } from '@premium-hub\\\\/shared';$/d\" apps/api/src/modules/support/support.service.ts)",
-      "Bash(sed -i '' \"s/import { formatAmount, parseAmount } from '@premium-hub\\\\/shared';/import { formatAmount, parseAmount } from '@premium-hub\\\\/shared';/\" apps/api/src/modules/bot/handlers/wallet.handler.ts)"
+      "Bash(sed -i '' \"s/import { formatAmount, parseAmount } from '@premium-hub\\\\/shared';/import { formatAmount, parseAmount } from '@premium-hub\\\\/shared';/\" apps/api/src/modules/bot/handlers/wallet.handler.ts)",
+      "Bash(grep -E \"^\\\\s*A?\\\\s*\\\\.env$\")",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Premium Hub: Telegram commerce bot + admin panel \\(initial build\\) *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"COMPOSE_EXIT:$?\")",
+      "Read(//tmp/**)",
+      "Bash(git commit -m 'Fix Docker images: pnpm CI mode, prod re-install, Prisma engine targets *)"
     ]
   }
 }

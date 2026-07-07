@@ -1,5 +1,9 @@
 # ---------- build ----------
 FROM node:22-slim AS build
+ENV CI=true
+# openssl lets Prisma detect the correct native engine variant
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+ && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@10.34.4 --activate
 WORKDIR /app
 
@@ -18,8 +22,10 @@ RUN pnpm --filter @premium-hub/shared build \
  && pnpm --filter @premium-hub/db build \
  && pnpm --filter @premium-hub/api build
 
-# Prune dev dependencies for the runtime image.
-RUN pnpm prune --prod
+# Replace node_modules with production-only deps, then regenerate the
+# Prisma client (the prod re-link drops the previously generated client).
+RUN pnpm install --prod --frozen-lockfile --filter @premium-hub/shared --filter @premium-hub/db --filter @premium-hub/api \
+ && pnpm --filter @premium-hub/db exec prisma generate
 
 # ---------- runtime ----------
 FROM node:22-slim
