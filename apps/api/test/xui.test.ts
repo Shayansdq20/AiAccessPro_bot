@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildConfigLink, defaultFlowFor } from '../src/modules/xui/xui-link';
+import { buildConfigLink, defaultFlowFor, extractShareLinks } from '../src/modules/xui/xui-link';
 import type { XuiInbound } from '../src/modules/xui/xui.types';
 
 const realityInbound: XuiInbound = {
@@ -87,5 +87,18 @@ describe('x-ui config link builder', () => {
     expect(() =>
       buildConfigLink({ ...realityInbound, protocol: 'shadowsocks' }, { uuid: 'x', remark: 'x' }, 'h'),
     ).toThrow(/Unsupported/);
+  });
+
+  it('extracts share links from arbitrary panel response shapes', () => {
+    expect(extractShareLinks('vless://abc@h:443?x=1#r')).toEqual(['vless://abc@h:443?x=1#r']);
+    expect(
+      extractShareLinks({
+        links: ['vmess://eyJ4IjoxfQ==', 'not-a-link'],
+        nested: [{ url: 'trojan://pw@h:443#r' }],
+      }),
+    ).toEqual(['vmess://eyJ4IjoxfQ==', 'trojan://pw@h:443#r']);
+    expect(extractShareLinks({ msg: 'hello', n: 5 })).toEqual([]);
+    // duplicates removed
+    expect(extractShareLinks(['vless://a', 'vless://a'])).toEqual(['vless://a']);
   });
 });

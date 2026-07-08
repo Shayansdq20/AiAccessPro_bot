@@ -100,3 +100,23 @@ function safeJson(value?: string): unknown {
     return {};
   }
 }
+
+/**
+ * Pulls share links (vless://, vmess://, ...) out of any response shape the
+ * panel's links endpoints might return (string, string[], nested objects).
+ */
+export function extractShareLinks(value: unknown): string[] {
+  const links: string[] = [];
+  const visit = (v: unknown) => {
+    if (typeof v === 'string') {
+      if (/^(vless|vmess|trojan|ss|hysteria2?|tuic|wireguard):\/\//i.test(v.trim())) {
+        links.push(v.trim());
+      }
+      return;
+    }
+    if (Array.isArray(v)) return v.forEach(visit);
+    if (v && typeof v === 'object') return Object.values(v).forEach(visit);
+  };
+  visit(value);
+  return [...new Set(links)];
+}
