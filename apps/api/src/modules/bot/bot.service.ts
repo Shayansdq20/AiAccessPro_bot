@@ -65,13 +65,21 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
 
   async onApplicationBootstrap() {
     if (config.telegram.mode === 'webhook') {
-      await this.bot.init();
-      const url = `${config.telegram.webhookUrl.replace(/\/$/, '')}/telegram/webhook`;
-      await this.bot.api.setWebhook(url, {
-        secret_token: config.telegram.webhookSecret || undefined,
-        drop_pending_updates: false,
-      });
-      this.logger.log(`Telegram webhook set to ${url}`);
+      // A webhook failure (bad token/URL/secret) must not crash-loop the API;
+      // the admin panel and REST API must stay available for debugging.
+      try {
+        await this.bot.init();
+        const url = `${config.telegram.webhookUrl.replace(/\/$/, '')}/telegram/webhook`;
+        await this.bot.api.setWebhook(url, {
+          secret_token: config.telegram.webhookSecret || undefined,
+          drop_pending_updates: false,
+        });
+        this.logger.log(`Telegram webhook set to ${url}`);
+      } catch (err) {
+        this.logger.error(
+          `Telegram webhook setup FAILED — bot will not receive updates until this is fixed and the api container is recreated: ${(err as Error).message}`,
+        );
+      }
     } else {
       // Long polling for local development — no public domain needed.
       await this.bot.api.deleteWebhook({ drop_pending_updates: false }).catch(() => undefined);
