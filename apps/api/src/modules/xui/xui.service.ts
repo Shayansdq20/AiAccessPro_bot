@@ -38,10 +38,19 @@ export class XuiService {
 
   // ------------------------------------------------------------------ auth
 
+  // Some WAFs/firewalls in front of panels reject requests without a
+  // browser-like User-Agent, returning 403.
+  private static readonly UA =
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+
   private async login(): Promise<void> {
     const res = await fetch(`${config.xui.baseUrl}/login`, {
       method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': XuiService.UA,
+        accept: 'application/json',
+      },
       body: new URLSearchParams({
         username: config.xui.username,
         password: config.xui.password,
@@ -65,7 +74,12 @@ export class XuiService {
     const doFetch = () =>
       fetch(`${config.xui.baseUrl}${path}`, {
         ...init,
-        headers: { cookie: this.cookie!, accept: 'application/json', ...init?.headers },
+        headers: {
+          cookie: this.cookie!,
+          accept: 'application/json',
+          'user-agent': XuiService.UA,
+          ...init?.headers,
+        },
         redirect: 'manual',
       });
 

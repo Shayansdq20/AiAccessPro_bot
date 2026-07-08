@@ -70,8 +70,9 @@ export class OrdersService {
    */
   async checkout(userId: string, quote: Quote): Promise<CheckoutResult> {
     // For strict auto_inventory plans, block purchase when there is no stock.
+    // API-provisioned plans (x-ui) don't use inventory, so the check is skipped.
     const variant = await this.catalog.variantForPurchase(quote.variantId);
-    if (variant.fulfillmentMode === 'auto_inventory') {
+    if (variant.fulfillmentMode === 'auto_inventory' && !variant.provisioner) {
       const stock = await this.inventory.availableCount(quote.variantId);
       if (stock <= 0) return { ok: false, reason: 'out_of_stock' };
     }

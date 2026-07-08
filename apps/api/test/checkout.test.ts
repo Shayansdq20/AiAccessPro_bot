@@ -197,7 +197,8 @@ describe('Checkout + fulfillment', () => {
 
   it('provisions x-ui VPN clients with GB × months and delivers links', async () => {
     const user = await createTestUser(prisma);
-    const { product, variant } = await createCatalog(prisma, { price: 100_000n, fulfillmentMode: 'manual_admin' });
+    // auto_inventory on purpose: provisioned plans must bypass the stock check.
+    const { product, variant } = await createCatalog(prisma, { price: 100_000n, fulfillmentMode: 'auto_inventory' });
     await prisma.product.update({
       where: { id: product.id },
       data: { useDurationTabs: true, durationExtraPercent: 45 },
