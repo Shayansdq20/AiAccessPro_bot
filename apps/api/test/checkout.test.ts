@@ -23,17 +23,26 @@ const texts = new TextsService(settings);
 const notifier = new NotifierService();
 const audit = new AuditService(prisma);
 // Stub x-ui panel: records provision calls, returns deterministic links.
-const provisionCalls: unknown[] = [];
+const provisionCalls: { inboundIds: number[]; gbTotal: number; months: number; subId: string }[] = [];
 const fakeXui = {
   enabled: true,
-  provisionClient: async (p: { uuid: string; subId: string; gbTotal: number; months: number }) => {
+  provisionSubscription: async (p: {
+    inboundIds: number[];
+    subId: string;
+    gbTotal: number;
+    months: number;
+  }) => {
     provisionCalls.push(p);
     return {
-      configLink: `vless://${p.uuid}@srv.example.com:443?type=tcp&security=reality#test`,
       subLink: `https://sub.example.com/sub/${p.subId}`,
+      configs: p.inboundIds.map((id) => ({
+        label: `inbound-${id}`,
+        link: `vless://uuid@srv.example.com:443?type=tcp&security=reality#loc${id}`,
+      })),
+      emails: [`ph-${p.subId}`],
     };
   },
-  clientTraffic: async () => null,
+  sumTraffic: async () => null,
 } as unknown as XuiService;
 const fulfillment = new FulfillmentService(prisma, inventory, notifier, texts, audit, fakeXui);
 const orders = new OrdersService(prisma, wallet, catalog, discounts, fulfillment, inventory, audit);
@@ -205,7 +214,7 @@ describe('Checkout + fulfillment', () => {
     });
     await prisma.productVariant.update({
       where: { id: variant.id },
-      data: { provisioner: 'xui', provisionerConfig: { inboundId: 3, gb: 30 } },
+      data: { provisioner: 'xui', provisionerConfig: { inboundIds: [3, 5], gb: 30 } },
     });
     await wallet.credit({ userId: user.id, amount: 1_000_000n, reference: 'payment:seed' });
 
@@ -217,22 +226,25 @@ describe('Checkout + fulfillment', () => {
     if (!result.ok) return;
     expect(result.fulfillment.kind).toBe('delivered');
 
-    // Volume scales with months: 30GB × 3 = 90GB.
+    // Volume scales with months (30GB × 3 = 90GB) across both inbounds.
     expect(provisionCalls).toHaveLength(1);
-    expect((provisionCalls[0] as { gbTotal: number }).gbTotal).toBe(90);
-    expect((provisionCalls[0] as { months: number }).months).toBe(3);
+    expect(provisionCalls[0].gbTotal).toBe(90);
+    expect(provisionCalls[0].months).toBe(3);
+    expect(provisionCalls[0].inboundIds).toEqual([3, 5]);
 
     const delivery = await prisma.delivery.findFirstOrThrow({ where: { orderId: result.order.id } });
     expect(delivery.type).toBe('auto_api');
     expect(delivery.status).toBe('sent');
-    const meta = delivery.meta as { gb: number; clientEmail: string; inboundId: number };
+    const meta = delivery.meta as { gb: number; emails: string[]; inboundIds: number[] };
     expect(meta.gb).toBe(90);
-    expect(meta.inboundId).toBe(3);
-    expect(meta.clientEmail).toContain(`ph${result.order.number}`);
+    expect(meta.inboundIds).toEqual([3, 5]);
+    expect(meta.emails.length).toBeGreaterThan(0);
 
-    const text = decryptPayload(delivery.payloadEnc!, 'test-encryption-key');
-    expect(text).toContain('https://sub.example.com/sub/');
-    expect(text).toContain('vless://');
+    // Encrypted payload is the structured VPN delivery (sub link + 2 configs).
+    const stored = JSON.parse(decryptPayload(delivery.payloadEnc!, 'test-encryption-key'));
+    expect(stored.kind).toBe('vpn');
+    expect(stored.subLink).toContain('https://sub.example.com/sub/');
+    expect(stored.configs).toHaveLength(2);
 
     const order = await prisma.order.findUniqueOrThrow({ where: { id: result.order.id } });
     expect(order.status).toBe('delivered');
@@ -243,13 +255,13 @@ describe('Checkout + fulfillment', () => {
     const { variant } = await createCatalog(prisma, { price: 50_000n, fulfillmentMode: 'manual_admin' });
     await prisma.productVariant.update({
       where: { id: variant.id },
-      data: { provisioner: 'xui', provisionerConfig: { inboundId: 99, gb: 10 } },
+      data: { provisioner: 'xui', provisionerConfig: { inboundIds: [99], gb: 10 } },
     });
     await wallet.credit({ userId: user.id, amount: 100_000n, reference: 'payment:seedx' });
 
     const failingXui = {
       enabled: true,
-      provisionClient: async () => {
+      provisionSubscription: async () => {
         throw new Error('panel unreachable');
       },
     } as unknown as XuiService;

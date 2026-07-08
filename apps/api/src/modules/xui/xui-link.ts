@@ -92,6 +92,17 @@ export function defaultFlowFor(inbound: XuiInbound): string | undefined {
   return undefined;
 }
 
+/** The #remark label at the end of a share link, if any. */
+export function remarkFromLink(link: string): string {
+  const hash = link.lastIndexOf('#');
+  if (hash < 0) return '';
+  try {
+    return decodeURIComponent(link.slice(hash + 1));
+  } catch {
+    return link.slice(hash + 1);
+  }
+}
+
 function safeJson(value?: string): unknown {
   if (!value) return {};
   try {

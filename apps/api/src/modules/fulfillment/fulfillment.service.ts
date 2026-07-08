@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { toBuffer } from 'qrcode';
 import type { Order, OrderItem, ProductVariant, User } from '@premium-hub/db';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,7 +8,15 @@ import { NotifierService } from '../notifier/notifier.service';
 import { TextsService } from '../settings/texts.service';
 import { AuditService } from '../audit/audit.service';
 import { XuiService } from '../xui/xui.service';
-import type { ProvisionerConfig } from '../xui/xui.types';
+import { normalizeInboundIds, type ProvisionerConfig } from '../xui/xui.types';
+import {
+  vpnCaptionHtml,
+  vpnConfigMessagesHtml,
+  vpnQrTarget,
+  type VpnDeliveryData,
+  type VpnLabels,
+} from '../xui/vpn-delivery';
+import { toFaDigits } from '@premium-hub/shared';
 
 export type FulfillmentOutcome =
   | { kind: 'delivered'; payload: string }
@@ -114,7 +122,8 @@ export class FulfillmentService {
     user: User,
   ): Promise<FulfillmentOutcome> {
     const cfg = variant.provisionerConfig as unknown as ProvisionerConfig | null;
-    if (!cfg?.inboundId || !cfg.gb) throw new Error('Plan has no valid provisionerConfig');
+    const inboundIds = normalizeInboundIds(cfg);
+    if (inboundIds.length === 0 || !cfg?.gb) throw new Error('Plan has no valid provisionerConfig');
     if (!this.xui.enabled) throw new Error('x-ui is not configured (XUI_* env vars)');
 
     const months = Math.max(
@@ -122,31 +131,22 @@ export class FulfillmentService {
       Number((item.optionsJson as { durationMonths?: number } | null)?.durationMonths ?? 1),
     );
     const gbTotal = cfg.gb * months;
-    const uuid = randomUUID();
     const subId = randomBytes(8).toString('hex');
     // Unique, traceable client email/remark on the panel.
-    const email = `ph${order.number}-${subId.slice(0, 6)}`;
+    const baseEmail = `ph${order.number}-${subId.slice(0, 6)}`;
     const remark = `${item.productTitle} #${order.number}`;
 
-    const { configLink, subLink } = await this.xui.provisionClient({
-      inboundId: cfg.inboundId,
-      uuid,
-      email,
+    const { subLink, configs, emails } = await this.xui.provisionSubscription({
+      inboundIds,
       subId,
       gbTotal,
       months,
       remark,
+      baseEmail,
     });
 
-    const lang = user.language;
-    const notes = await this.texts.text(lang, 'delivery.vpnNotes');
-    const text = await this.texts.text(lang, 'delivery.vpnAuto', {
-      subLink: subLink || configLink,
-      configLink,
-      gb: gbTotal,
-      months,
-      notes,
-    });
+    const data: VpnDeliveryData = { kind: 'vpn', subLink, configs, gb: gbTotal, months };
+    const labels = await this.vpnLabels(user.language, gbTotal, months);
 
     await this.prisma.$transaction([
       this.prisma.delivery.create({
@@ -154,8 +154,9 @@ export class FulfillmentService {
           orderId: order.id,
           type: 'auto_api',
           status: 'sent',
-          payloadEnc: this.inventory.encrypt(text),
-          meta: { clientEmail: email, clientUuid: uuid, inboundId: cfg.inboundId, subId, gb: gbTotal, months },
+          // Encrypted structured payload — "My Services" re-renders from this.
+          payloadEnc: this.inventory.encrypt(JSON.stringify(data)),
+          meta: { subId, inboundIds, gb: gbTotal, months, emails, primaryEmail: emails[0] },
           sentAt: new Date(),
         },
       }),
@@ -165,18 +166,46 @@ export class FulfillmentService {
       action: 'delivery.xui',
       entityType: 'Order',
       entityId: order.id,
-      meta: { inboundId: cfg.inboundId, email, gb: gbTotal, months },
+      meta: { inboundIds, emails, gb: gbTotal, months },
     });
 
-    await this.notifier.sendMessage(user.telegramId, text);
-    // QR of the subscription link (falls back to the raw config link).
-    try {
-      const qr = await toBuffer(subLink || configLink, { width: 512, margin: 2 });
-      await this.notifier.sendPhotoBuffer(user.telegramId, qr);
-    } catch (err) {
-      this.logger.warn(`QR generation failed for order ${order.id}: ${(err as Error).message}`);
+    // Deliver: QR photo with info caption, then copyable config link message(s).
+    const caption = vpnCaptionHtml(data, labels);
+    const qrTarget = vpnQrTarget(data);
+    if (qrTarget) {
+      try {
+        const qr = await toBuffer(qrTarget, { width: 512, margin: 2 });
+        await this.notifier.sendPhotoBuffer(user.telegramId, qr, caption, 'HTML');
+      } catch (err) {
+        this.logger.warn(`QR generation failed for order ${order.id}: ${(err as Error).message}`);
+        await this.notifier.sendMessage(user.telegramId, caption, undefined, 'HTML');
+      }
+    } else {
+      await this.notifier.sendMessage(user.telegramId, caption, undefined, 'HTML');
     }
-    return { kind: 'delivered', payload: text };
+    for (const message of vpnConfigMessagesHtml(data, labels)) {
+      await this.notifier.sendMessage(user.telegramId, message, undefined, 'HTML');
+    }
+    return { kind: 'delivered', payload: qrTarget ?? '' };
+  }
+
+  /** Localized, placeholder-filled labels for the VPN delivery renderer. */
+  private async vpnLabels(
+    lang: User['language'],
+    gb: number,
+    months: number,
+  ): Promise<VpnLabels> {
+    const gbStr = lang === 'fa' ? toFaDigits(gb) : String(gb);
+    const monthsStr = lang === 'fa' ? toFaDigits(months) : String(months);
+    const [ready, volume, duration, subLabel, configsHeader, notes] = await Promise.all([
+      this.texts.text(lang, 'delivery.vpnReady'),
+      this.texts.text(lang, 'delivery.vpnVolume', { gb: gbStr }),
+      this.texts.text(lang, 'delivery.vpnDuration', { months: monthsStr }),
+      this.texts.text(lang, 'delivery.vpnSubLabel'),
+      this.texts.text(lang, 'delivery.vpnConfigsHeader'),
+      this.texts.text(lang, 'delivery.vpnNotes'),
+    ]);
+    return { ready, volume, duration, subLabel, configsHeader, notes };
   }
 
   private async createManualDelivery(orderId: string): Promise<FulfillmentOutcome> {

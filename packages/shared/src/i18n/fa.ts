@@ -76,10 +76,13 @@ export const fa: Record<MessageKey, string> = {
   'delivery.auto': '🎉 سرویس شما آماده است!\n\n{payload}\n\nهر زمان خواستید از بخش «سرویس‌های من» می‌توانید آن را ببینید.',
   'delivery.pending': '📦 سفارش #{id} ثبت شد. اطلاعات سرویس به زودی توسط تیم ما برای شما ارسال می‌شود.',
   'delivery.manualSent': '📬 تحویل سفارش #{id}:\n\n{payload}',
-  'delivery.vpnAuto':
-    '🎉 سرویس VPN شما آماده است!\n\n📡 لینک اشتراک (در برنامه خودکار آپدیت می‌شود):\n{subLink}\n\n🔗 کانفیگ مستقیم:\n{configLink}\n\n📦 حجم: {gb} گیگابایت | ⏰ مدت: {months} ماه\n\n{notes}',
+  'delivery.vpnReady': '🎉 سرویس VPN شما آماده شد!',
+  'delivery.vpnVolume': '📦 حجم: {gb} گیگابایت',
+  'delivery.vpnDuration': '⏰ مدت: {months} ماه',
+  'delivery.vpnSubLabel': '📡 لینک اشتراک (همه لوکیشن‌ها، خودکار آپدیت می‌شود):',
+  'delivery.vpnConfigsHeader': '🔧 کانفیگ‌ها (برای کپی روی هرکدام بزنید):',
   'delivery.vpnNotes':
-    'لینک اشتراک را در برنامه (v2rayNG، Streisand و ...) وارد کنید یا QR پایین را اسکن کنید. برای دیدن حجم باقی‌مانده هر زمان به «سرویس‌های من» سر بزنید.',
+    'QR را اسکن کنید یا لینک اشتراک را در برنامه (v2rayNG، Streisand و ...) وارد کنید. برای دیدن حجم باقی‌مانده هر زمان به «سرویس‌های من» سر بزنید.',
   'services.traffic': '📊 مصرف: {used} گیگ از {total} گیگ',
 
   // Orders

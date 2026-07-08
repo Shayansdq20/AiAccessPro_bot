@@ -5,6 +5,7 @@ import { formatAmount, toFaDigits } from '@premium-hub/shared';
 import { OrdersService } from '../../orders/orders.service';
 import { InventoryService } from '../../fulfillment/inventory.service';
 import { XuiService } from '../../xui/xui.service';
+import { vpnServiceDetailHtml, type VpnDeliveryData, type VpnLabels } from '../../xui/vpn-delivery';
 import { BotCommonService } from '../bot-common.service';
 import type { BotContext } from '../bot.context';
 
@@ -113,36 +114,79 @@ export class OrdersHandler {
     if (!order) return;
     const item = order.items[0];
     const delivery = order.deliveries.find((d) => d.status === 'sent');
-    let payload = '—';
+    const keyboard = new InlineKeyboard().text(await this.common.t(lang, 'common.back'), 'nav:services');
+
+    // Decrypt the stored payload; x-ui deliveries hold a structured VPN JSON.
+    let decrypted = '';
     if (delivery?.payloadEnc) {
       try {
-        payload = this.inventory.decrypt(delivery.payloadEnc);
+        decrypted = this.inventory.decrypt(delivery.payloadEnc);
       } catch {
-        payload = '—';
+        decrypted = '';
       }
     }
-    let text = await this.common.t(lang, 'services.detail', {
+    let vpn: VpnDeliveryData | null = null;
+    try {
+      const parsed = JSON.parse(decrypted) as VpnDeliveryData;
+      if (parsed?.kind === 'vpn') vpn = parsed;
+    } catch {
+      vpn = null;
+    }
+
+    if (vpn) {
+      const headerLine = await this.common.t(lang, 'services.detail', {
+        id: lang === 'fa' ? toFaDigits(order.number) : order.number,
+        product: item?.productTitle ?? '—',
+        plan: item?.variantTitle ?? '—',
+        date: delivery?.sentAt ? this.formatDate(delivery.sentAt, lang) : '—',
+        payload: '',
+      });
+      const labels = await this.vpnLabels(lang, vpn.gb, vpn.months);
+      let text = vpnServiceDetailHtml(vpn, labels, headerLine);
+      text += await this.trafficLine(lang, delivery?.meta, vpn.gb);
+      await ctx
+        .editMessageText(text, { parse_mode: 'HTML', reply_markup: keyboard, link_preview_options: { is_disabled: true } })
+        .catch(() => ctx.reply(text, { parse_mode: 'HTML', reply_markup: keyboard }));
+      return;
+    }
+
+    // Non-VPN services: plain decrypted payload.
+    const text = await this.common.t(lang, 'services.detail', {
       id: lang === 'fa' ? toFaDigits(order.number) : order.number,
       product: item?.productTitle ?? '—',
       plan: item?.variantTitle ?? '—',
       date: delivery?.sentAt ? this.formatDate(delivery.sentAt, lang) : '—',
-      payload,
+      payload: decrypted || '—',
     });
-
-    // Live remaining traffic for x-ui provisioned VPN services.
-    const meta = delivery?.meta as { clientEmail?: string; gb?: number } | null;
-    if (meta?.clientEmail && this.xui.enabled) {
-      const traffic = await this.xui.clientTraffic(meta.clientEmail);
-      if (traffic) {
-        const usedGb = ((traffic.up + traffic.down) / 1024 ** 3).toFixed(1);
-        const totalGb = traffic.total > 0 ? (traffic.total / 1024 ** 3).toFixed(0) : String(meta.gb ?? '∞');
-        text += `\n\n${await this.common.t(lang, 'services.traffic', {
-          used: lang === 'fa' ? toFaDigits(usedGb) : usedGb,
-          total: lang === 'fa' ? toFaDigits(totalGb) : totalGb,
-        })}`;
-      }
-    }
-    const keyboard = new InlineKeyboard().text(await this.common.t(lang, 'common.back'), 'nav:services');
     await ctx.editMessageText(text, { reply_markup: keyboard }).catch(() => ctx.reply(text, { reply_markup: keyboard }));
+  }
+
+  private async vpnLabels(lang: 'fa' | 'en', gb: number, months: number): Promise<VpnLabels> {
+    const gbStr = lang === 'fa' ? toFaDigits(gb) : String(gb);
+    const monthsStr = lang === 'fa' ? toFaDigits(months) : String(months);
+    const [ready, volume, duration, subLabel, configsHeader, notes] = await Promise.all([
+      this.common.t(lang, 'delivery.vpnReady'),
+      this.common.t(lang, 'delivery.vpnVolume', { gb: gbStr }),
+      this.common.t(lang, 'delivery.vpnDuration', { months: monthsStr }),
+      this.common.t(lang, 'delivery.vpnSubLabel'),
+      this.common.t(lang, 'delivery.vpnConfigsHeader'),
+      this.common.t(lang, 'delivery.vpnNotes'),
+    ]);
+    return { ready, volume, duration, subLabel, configsHeader, notes };
+  }
+
+  /** Live remaining traffic, summed across the subscription's client emails. */
+  private async trafficLine(lang: 'fa' | 'en', meta: unknown, gbFallback: number): Promise<string> {
+    const m = meta as { emails?: string[]; primaryEmail?: string; gb?: number } | null;
+    const emails = m?.emails ?? (m?.primaryEmail ? [m.primaryEmail] : []);
+    if (emails.length === 0 || !this.xui.enabled) return '';
+    const traffic = await this.xui.sumTraffic(emails);
+    if (!traffic) return '';
+    const usedGb = ((traffic.up + traffic.down) / 1024 ** 3).toFixed(1);
+    const totalGb = traffic.total > 0 ? (traffic.total / 1024 ** 3).toFixed(0) : String(m?.gb ?? gbFallback);
+    return `\n\n${await this.common.t(lang, 'services.traffic', {
+      used: lang === 'fa' ? toFaDigits(usedGb) : usedGb,
+      total: lang === 'fa' ? toFaDigits(totalGb) : totalGb,
+    })}`;
   }
 }

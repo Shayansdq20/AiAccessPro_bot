@@ -46,7 +46,8 @@ const variantSchema = z.object({
   isActive: z.coerce.boolean().default(true),
   // x-ui auto provisioning (empty string = disabled)
   provisioner: z.enum(['', 'xui']).optional(),
-  provisionerInboundId: z.coerce.number().int().positive().optional(),
+  // One or more inbounds (locations) to provision across.
+  provisionerInboundIds: z.array(z.coerce.number().int().positive()).optional(),
   provisionerGb: z.coerce.number().positive().optional(),
 });
 
@@ -54,12 +55,13 @@ const variantSchema = z.object({
 function provisionerData(data: z.infer<typeof variantSchema> | Partial<z.infer<typeof variantSchema>>) {
   if (data.provisioner === undefined) return {};
   if (data.provisioner !== 'xui') return { provisioner: null, provisionerConfig: Prisma.DbNull };
-  if (!data.provisionerInboundId || !data.provisionerGb) {
-    throw new BadRequestException('x-ui plans need an inbound and a GB volume');
+  const inboundIds = data.provisionerInboundIds ?? [];
+  if (inboundIds.length === 0 || !data.provisionerGb) {
+    throw new BadRequestException('x-ui plans need at least one inbound and a GB volume');
   }
   return {
     provisioner: 'xui',
-    provisionerConfig: { inboundId: data.provisionerInboundId, gb: data.provisionerGb },
+    provisionerConfig: { inboundIds, gb: data.provisionerGb },
   };
 }
 
@@ -211,7 +213,7 @@ export class CatalogAdminController {
     const data = variantSchema.parse(body);
     const product = await this.prisma.product.findFirst({ where: { id: data.productId, isActive: true } });
     if (!product) throw new NotFoundException('Product not found');
-    const { provisioner: _p, provisionerInboundId: _i, provisionerGb: _g, ...rest } = data;
+    const { provisioner: _p, provisionerInboundIds: _i, provisionerGb: _g, ...rest } = data;
     const created = await this.prisma.productVariant.create({
       data: {
         ...rest,
@@ -227,7 +229,7 @@ export class CatalogAdminController {
   @Patch('variants/:id')
   async updateVariant(@Param('id') id: string, @Body() body: unknown, @Req() req: AdminRequest) {
     const data = variantSchema.partial().parse(body);
-    const { provisioner: _p, provisionerInboundId: _i, provisionerGb: _g, ...rest } = data;
+    const { provisioner: _p, provisionerInboundIds: _i, provisionerGb: _g, ...rest } = data;
     const updated = await this.prisma.productVariant.update({
       where: { id },
       data: {

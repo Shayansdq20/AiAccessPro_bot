@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { config } from '../../config';
-import { buildConfigLink, defaultFlowFor, extractShareLinks } from './xui-link';
+import { buildConfigLink, defaultFlowFor, extractShareLinks, remarkFromLink } from './xui-link';
+import type { VpnConfig } from './vpn-delivery';
 import type { XuiClientInput, XuiInbound, XuiTraffic } from './xui.types';
 
 interface XuiResponse<T = unknown> {
@@ -157,11 +159,12 @@ export class XuiService {
   }
 
   /**
-   * Create a client using whichever API generation the panel speaks.
+   * Add a client. On v3 a single client can span multiple inbounds in one
+   * call; on v2 this targets one inbound (callers loop for multiple).
    * Note: despite the name, `totalGB` is BYTES in both generations (verified
    * against the panel's own frontend, which converts GB -> bytes).
    */
-  async addClient(inboundId: number, client: XuiClientInput): Promise<void> {
+  async addClientToInbounds(inboundIds: number[], client: XuiClientInput): Promise<void> {
     const gen = await this.detectGeneration();
     if (gen === 3) {
       await this.request('/panel/api/clients/add', {
@@ -182,7 +185,7 @@ export class XuiService {
             comment: '',
             reset: 0,
           },
-          inboundIds: [inboundId],
+          inboundIds,
         }),
       });
       return;
@@ -206,7 +209,7 @@ export class XuiService {
     await this.request('/panel/api/inbounds/addClient', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ id: inboundId, settings: JSON.stringify(settings) }),
+      body: JSON.stringify({ id: inboundIds[0], settings: JSON.stringify(settings) }),
     });
   }
 
@@ -255,33 +258,104 @@ export class XuiService {
     }
   }
 
-  /** Provision a client on an inbound and return the deliverable links. */
-  async provisionClient(params: {
-    inboundId: number;
-    uuid: string;
-    email: string;
+  /** Sum traffic across one or more client emails (v2 uses one email per inbound). */
+  async sumTraffic(emails: string[]): Promise<XuiTraffic | null> {
+    let up = 0;
+    let down = 0;
+    let total = 0;
+    let expiryTime = 0;
+    let found = false;
+    for (const email of emails) {
+      const t = await this.clientTraffic(email);
+      if (t) {
+        found = true;
+        up += t.up;
+        down += t.down;
+        total += t.total;
+        expiryTime = t.expiryTime || expiryTime;
+      }
+    }
+    return found ? { email: emails[0] ?? '', up, down, total, expiryTime } : null;
+  }
+
+  /**
+   * Provision a subscription across one or more inbounds (locations) and
+   * return the deliverable subscription link + per-inbound config links.
+   * v3: one client spanning all inbounds (native). v2: one client per inbound
+   * sharing the same subId so the subscription link aggregates them.
+   */
+  async provisionSubscription(params: {
+    inboundIds: number[];
     subId: string;
     gbTotal: number;
     months: number;
     remark: string;
-  }): Promise<{ configLink: string; subLink: string }> {
-    const inbound = await this.getInbound(params.inboundId);
-    const flow = defaultFlowFor(inbound);
-    await this.addClient(params.inboundId, {
-      uuid: params.uuid,
-      email: params.email,
-      subId: params.subId,
-      totalBytes: params.gbTotal * 1024 ** 3,
-      expiryTimeMs: Date.now() + params.months * 30 * 24 * 3600 * 1000,
-      flow,
-    });
+    baseEmail: string;
+  }): Promise<{ subLink: string; configs: VpnConfig[]; emails: string[] }> {
+    const totalBytes = params.gbTotal * 1024 ** 3;
+    const expiryTimeMs = Date.now() + params.months * 30 * 24 * 3600 * 1000;
+    const gen = await this.detectGeneration();
+    const configs: VpnConfig[] = [];
+    const emails: string[] = [];
 
-    // v3 panels generate the exact share link themselves; fall back to our
-    // local builder (needed for v2 panels).
-    const panelLinks = await this.panelClientLinks(params.email);
-    const configLink =
-      panelLinks[0] ??
-      buildConfigLink(inbound, { uuid: params.uuid, remark: params.remark, flow }, this.publicHost);
-    return { configLink, subLink: this.subLink(params.subId) };
+    if (gen === 3) {
+      const inbounds = (
+        await Promise.all(params.inboundIds.map((id) => this.getInbound(id).catch(() => null)))
+      ).filter((i): i is XuiInbound => Boolean(i));
+      // One client flow must cover all inbounds; use vision only if every
+      // selected inbound is reality-over-tcp, else leave it unset.
+      const flow =
+        inbounds.length > 0 && inbounds.every((i) => defaultFlowFor(i) === 'xtls-rprx-vision')
+          ? 'xtls-rprx-vision'
+          : '';
+      const uuid = randomUUID();
+      await this.addClientToInbounds(params.inboundIds, {
+        uuid,
+        email: params.baseEmail,
+        subId: params.subId,
+        totalBytes,
+        expiryTimeMs,
+        flow,
+      });
+      emails.push(params.baseEmail);
+
+      const panelLinks = await this.panelClientLinks(params.baseEmail);
+      if (panelLinks.length > 0) {
+        panelLinks.forEach((link, i) =>
+          configs.push({ label: remarkFromLink(link) || inbounds[i]?.remark || `config ${i + 1}`, link }),
+        );
+      } else {
+        for (const inb of inbounds) {
+          configs.push({
+            label: inb.remark,
+            link: buildConfigLink(
+              inb,
+              { uuid, remark: `${params.remark} ${inb.remark}`, flow: defaultFlowFor(inb) },
+              this.publicHost,
+            ),
+          });
+        }
+      }
+    } else {
+      // v2: a separate client per inbound (email is globally unique in v2),
+      // all sharing the same subId so the subscription link groups them.
+      let idx = 0;
+      for (const id of params.inboundIds) {
+        idx += 1;
+        const inb = await this.getInbound(id).catch(() => null);
+        if (!inb) continue;
+        const uuid = randomUUID();
+        const email = `${params.baseEmail}-${idx}`;
+        const flow = defaultFlowFor(inb);
+        await this.addClientToInbounds([id], { uuid, email, subId: params.subId, totalBytes, expiryTimeMs, flow });
+        emails.push(email);
+        configs.push({
+          label: inb.remark,
+          link: buildConfigLink(inb, { uuid, remark: `${params.remark} ${inb.remark}`, flow }, this.publicHost),
+        });
+      }
+    }
+
+    return { subLink: this.subLink(params.subId), configs, emails };
   }
 }

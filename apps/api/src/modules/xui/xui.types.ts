@@ -30,6 +30,17 @@ export interface XuiTraffic {
 }
 
 export interface ProvisionerConfig {
-  inboundId: number;
+  /** One or more inbounds (locations) the plan provisions across. */
+  inboundIds?: number[];
+  /** Legacy single-inbound field (pre-multi-inbound). */
+  inboundId?: number;
   gb: number;
+}
+
+/** Read inbound ids tolerating the legacy single-inbound shape. */
+export function normalizeInboundIds(cfg?: ProvisionerConfig | null): number[] {
+  if (!cfg) return [];
+  if (cfg.inboundIds?.length) return cfg.inboundIds;
+  if (typeof cfg.inboundId === 'number') return [cfg.inboundId];
+  return [];
 }

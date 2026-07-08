@@ -17,9 +17,19 @@ export class NotifierService {
     return config.telegram.adminIds;
   }
 
-  async sendMessage(chatId: string | number | bigint, text: string, keyboard?: InlineKeyboard): Promise<boolean> {
+  async sendMessage(
+    chatId: string | number | bigint,
+    text: string,
+    keyboard?: InlineKeyboard,
+    parseMode?: 'HTML',
+  ): Promise<boolean> {
     try {
-      await this.api.sendMessage(String(chatId), text, keyboard ? { reply_markup: keyboard } : undefined);
+      await this.api.sendMessage(String(chatId), text, {
+        reply_markup: keyboard,
+        parse_mode: parseMode,
+        // Config links shouldn't spawn giant link previews.
+        link_preview_options: parseMode ? { is_disabled: true } : undefined,
+      });
       return true;
     } catch (err) {
       this.logger.warn(`sendMessage to ${chatId} failed: ${(err as Error).message}`);
@@ -32,9 +42,13 @@ export class NotifierService {
     chatId: string | number | bigint,
     image: Buffer,
     caption?: string,
+    parseMode?: 'HTML',
   ): Promise<boolean> {
     try {
-      await this.api.sendPhoto(String(chatId), new InputFile(image, 'qr.png'), { caption });
+      await this.api.sendPhoto(String(chatId), new InputFile(image, 'qr.png'), {
+        caption,
+        parse_mode: parseMode,
+      });
       return true;
     } catch (err) {
       this.logger.warn(`sendPhotoBuffer to ${chatId} failed: ${(err as Error).message}`);

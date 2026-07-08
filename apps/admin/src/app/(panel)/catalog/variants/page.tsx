@@ -14,7 +14,7 @@ interface Variant {
   optionGroup?: string;
   sortOrder: number;
   provisioner?: string | null;
-  provisionerConfig?: { inboundId: number; gb: number } | null;
+  provisionerConfig?: { inboundIds?: number[]; inboundId?: number; gb: number } | null;
   product: { id: string; title: string; category: { title: string } };
   _count: { orderItems: number };
   inventory: Record<string, number>;
@@ -49,7 +49,7 @@ export default async function VariantsPage() {
         optionGroup: String(formData.get('optionGroup') ?? '') || undefined,
         sortOrder: Number(formData.get('sortOrder') ?? 0),
         provisioner,
-        provisionerInboundId: Number(formData.get('provisionerInboundId') || 0) || undefined,
+        provisionerInboundIds: formData.getAll('provisionerInboundIds').map((v) => Number(v)).filter(Boolean),
         provisionerGb: Number(formData.get('provisionerGb') || 0) || undefined,
       },
       revalidate: '/catalog/variants',
@@ -69,12 +69,16 @@ export default async function VariantsPage() {
         optionGroup: String(formData.get('optionGroup') ?? ''),
         sortOrder: Number(formData.get('sortOrder') ?? 0),
         provisioner,
-        provisionerInboundId: Number(formData.get('provisionerInboundId') || 0) || undefined,
+        provisionerInboundIds: formData.getAll('provisionerInboundIds').map((v) => Number(v)).filter(Boolean),
         provisionerGb: Number(formData.get('provisionerGb') || 0) || undefined,
       },
       revalidate: '/catalog/variants',
     });
   }
+
+  const selectedIds = (v: Variant): number[] =>
+    v.provisionerConfig?.inboundIds ??
+    (v.provisionerConfig?.inboundId != null ? [v.provisionerConfig.inboundId] : []);
 
   async function remove(id: string) {
     'use server';
@@ -113,11 +117,12 @@ export default async function VariantsPage() {
               </div>
               <div>
                 <label className="label">{t.xuiInbound}</label>
-                <select className="input" name="provisionerInboundId">
+                <select className="input min-w-52" name="provisionerInboundIds" multiple size={Math.min(4, Math.max(2, xui.inbounds.length))}>
                   {xui.inbounds.map((i) => (
                     <option key={i.id} value={i.id}>#{i.id} {i.remark} ({i.protocol}:{i.port})</option>
                   ))}
                 </select>
+                <span className="mt-1 block text-xs text-slate-400">{t.xuiMultiHint}</span>
               </div>
               <div className="w-28">
                 <label className="label">{t.xuiGb}</label>
@@ -154,7 +159,7 @@ export default async function VariantsPage() {
                 <td className="text-xs">
                   {v.provisioner === 'xui' && (
                     <span className="badge badge-blue">
-                      🛡 x-ui #{v.provisionerConfig?.inboundId} · {v.provisionerConfig?.gb}GB
+                      🛡 x-ui · {selectedIds(v).length} inbound · {v.provisionerConfig?.gb}GB
                     </span>
                   )}{' '}
                   <span className="badge badge-green">{v.inventory.available ?? 0} {t.available}</span>{' '}
@@ -180,7 +185,7 @@ export default async function VariantsPage() {
                             <option value="">{t.none}</option>
                             <option value="xui">x-ui</option>
                           </select>
-                          <select className="input" name="provisionerInboundId" defaultValue={v.provisionerConfig?.inboundId ?? ''}>
+                          <select className="input" name="provisionerInboundIds" multiple size={Math.min(4, Math.max(2, xui.inbounds.length))} defaultValue={selectedIds(v).map(String)}>
                             {xui.inbounds.map((i) => (
                               <option key={i.id} value={i.id}>#{i.id} {i.remark} ({i.protocol}:{i.port})</option>
                             ))}

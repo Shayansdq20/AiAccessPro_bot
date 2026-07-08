@@ -77,10 +77,13 @@ export const en = {
   'delivery.pending':
     '📦 Your order #{id} is registered. The service details will be sent to you by our team shortly.',
   'delivery.manualSent': '📬 Delivery for order #{id}:\n\n{payload}',
-  'delivery.vpnAuto':
-    '🎉 Your VPN service is ready!\n\n📡 Subscription link (auto-updates in your app):\n{subLink}\n\n🔗 Direct config:\n{configLink}\n\n📦 Volume: {gb} GB | ⏰ Duration: {months} month(s)\n\n{notes}',
+  'delivery.vpnReady': '🎉 Your VPN service is ready!',
+  'delivery.vpnVolume': '📦 Volume: {gb} GB',
+  'delivery.vpnDuration': '⏰ Duration: {months} month(s)',
+  'delivery.vpnSubLabel': '📡 Subscription link (all locations, auto-updates):',
+  'delivery.vpnConfigsHeader': '🔧 Configs (tap any to copy):',
   'delivery.vpnNotes':
-    'Import the subscription link in your app (v2rayNG, Streisand, …) or scan the QR code below. Check "My Services" anytime to see your remaining traffic.',
+    'Scan the QR code, or copy the subscription link into your app (v2rayNG, Streisand, …). Check "My Services" anytime for your remaining traffic.',
   'services.traffic': '📊 Usage: {used} GB of {total} GB',
 
   // Orders
