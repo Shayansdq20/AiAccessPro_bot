@@ -47,6 +47,17 @@ export const config = {
     sandbox: optional('ZARINPAL_SANDBOX', 'true') === 'true',
     callbackUrl: optional('ZARINPAL_CALLBACK_URL'),
   },
+
+  // 3x-ui (Sanaei) panel for automatic VPN provisioning.
+  xui: {
+    baseUrl: optional('XUI_BASE_URL').replace(/\/$/, ''),
+    username: optional('XUI_USERNAME'),
+    password: optional('XUI_PASSWORD'),
+    // Subscription base, e.g. https://panel.example.com:2096/sub
+    subBaseUrl: optional('XUI_SUB_BASE_URL').replace(/\/$/, ''),
+    // Public server address for config links; defaults to the panel host.
+    publicHost: optional('XUI_PUBLIC_HOST'),
+  },
 };
 
 export type AppConfig = typeof config;

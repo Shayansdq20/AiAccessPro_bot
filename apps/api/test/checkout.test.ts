@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { encryptPayload } from '@premium-hub/db';
+import { decryptPayload, encryptPayload } from '@premium-hub/db';
 import { WalletService } from '../src/modules/wallet/wallet.service';
+import { XuiService } from '../src/modules/xui/xui.service';
 import { CatalogService } from '../src/modules/catalog/catalog.service';
 import { DiscountsService } from '../src/modules/discounts/discounts.service';
 import { InventoryService } from '../src/modules/fulfillment/inventory.service';
@@ -21,7 +22,20 @@ const settings = new SettingsService(prisma);
 const texts = new TextsService(settings);
 const notifier = new NotifierService();
 const audit = new AuditService(prisma);
-const fulfillment = new FulfillmentService(prisma, inventory, notifier, texts, audit);
+// Stub x-ui panel: records provision calls, returns deterministic links.
+const provisionCalls: unknown[] = [];
+const fakeXui = {
+  enabled: true,
+  provisionClient: async (p: { uuid: string; subId: string; gbTotal: number; months: number }) => {
+    provisionCalls.push(p);
+    return {
+      configLink: `vless://${p.uuid}@srv.example.com:443?type=tcp&security=reality#test`,
+      subLink: `https://sub.example.com/sub/${p.subId}`,
+    };
+  },
+  clientTraffic: async () => null,
+} as unknown as XuiService;
+const fulfillment = new FulfillmentService(prisma, inventory, notifier, texts, audit, fakeXui);
 const orders = new OrdersService(prisma, wallet, catalog, discounts, fulfillment, inventory, audit);
 
 const KEY = 'test-encryption-key';
@@ -179,6 +193,78 @@ describe('Checkout + fulfillment', () => {
     const minCheck = await discounts.validateById(bigMin.id, user.id, 200_000n);
     expect(minCheck.ok).toBe(false);
     if (!minCheck.ok) expect(minCheck.reason).toBe('min_order');
+  });
+
+  it('provisions x-ui VPN clients with GB × months and delivers links', async () => {
+    const user = await createTestUser(prisma);
+    const { product, variant } = await createCatalog(prisma, { price: 100_000n, fulfillmentMode: 'manual_admin' });
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { useDurationTabs: true, durationExtraPercent: 45 },
+    });
+    await prisma.productVariant.update({
+      where: { id: variant.id },
+      data: { provisioner: 'xui', provisionerConfig: { inboundId: 3, gb: 30 } },
+    });
+    await wallet.credit({ userId: user.id, amount: 1_000_000n, reference: 'payment:seed' });
+
+    provisionCalls.length = 0;
+    const quote = await orders.quote(user.id, variant.id, 3);
+    const result = await orders.checkout(user.id, quote);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.fulfillment.kind).toBe('delivered');
+
+    // Volume scales with months: 30GB × 3 = 90GB.
+    expect(provisionCalls).toHaveLength(1);
+    expect((provisionCalls[0] as { gbTotal: number }).gbTotal).toBe(90);
+    expect((provisionCalls[0] as { months: number }).months).toBe(3);
+
+    const delivery = await prisma.delivery.findFirstOrThrow({ where: { orderId: result.order.id } });
+    expect(delivery.type).toBe('auto_api');
+    expect(delivery.status).toBe('sent');
+    const meta = delivery.meta as { gb: number; clientEmail: string; inboundId: number };
+    expect(meta.gb).toBe(90);
+    expect(meta.inboundId).toBe(3);
+    expect(meta.clientEmail).toContain(`ph${result.order.number}`);
+
+    const text = decryptPayload(delivery.payloadEnc!, 'test-encryption-key');
+    expect(text).toContain('https://sub.example.com/sub/');
+    expect(text).toContain('vless://');
+
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: result.order.id } });
+    expect(order.status).toBe('delivered');
+  });
+
+  it('falls back to manual delivery when the x-ui panel call fails', async () => {
+    const user = await createTestUser(prisma, 3001n);
+    const { variant } = await createCatalog(prisma, { price: 50_000n, fulfillmentMode: 'manual_admin' });
+    await prisma.productVariant.update({
+      where: { id: variant.id },
+      data: { provisioner: 'xui', provisionerConfig: { inboundId: 99, gb: 10 } },
+    });
+    await wallet.credit({ userId: user.id, amount: 100_000n, reference: 'payment:seedx' });
+
+    const failingXui = {
+      enabled: true,
+      provisionClient: async () => {
+        throw new Error('panel unreachable');
+      },
+    } as unknown as XuiService;
+    const failingFulfillment = new FulfillmentService(prisma, inventory, notifier, texts, audit, failingXui);
+    const failingOrders = new OrdersService(prisma, wallet, catalog, discounts, failingFulfillment, inventory, audit);
+
+    const quote = await failingOrders.quote(user.id, variant.id);
+    const result = await failingOrders.checkout(user.id, quote);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Payment succeeded; admin gets a pending manual delivery instead of a lost order.
+    expect(result.fulfillment.kind).toBe('pending_manual');
+    const delivery = await prisma.delivery.findFirstOrThrow({ where: { orderId: result.order.id } });
+    expect(delivery.type).toBe('manual');
+    expect(delivery.status).toBe('pending');
   });
 
   it('strict auto_inventory refuses checkout when out of stock', async () => {

@@ -1,9 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { toBuffer } from 'qrcode';
+import type { Order, OrderItem, ProductVariant, User } from '@premium-hub/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from './inventory.service';
 import { NotifierService } from '../notifier/notifier.service';
 import { TextsService } from '../settings/texts.service';
 import { AuditService } from '../audit/audit.service';
+import { XuiService } from '../xui/xui.service';
+import type { ProvisionerConfig } from '../xui/xui.types';
 
 export type FulfillmentOutcome =
   | { kind: 'delivered'; payload: string }
@@ -27,6 +32,7 @@ export class FulfillmentService {
     private readonly notifier: NotifierService,
     private readonly texts: TextsService,
     private readonly audit: AuditService,
+    private readonly xui: XuiService,
   ) {}
 
   async fulfillOrder(orderId: string): Promise<FulfillmentOutcome> {
@@ -36,6 +42,19 @@ export class FulfillmentService {
     });
     const item = order.items[0];
     const mode = item.variant?.fulfillmentMode ?? 'manual_admin';
+
+    // API provisioning (x-ui VPN) takes priority over inventory/manual.
+    if (item.variant?.provisioner === 'xui') {
+      try {
+        return await this.provisionXui(order, item, item.variant, order.user);
+      } catch (err) {
+        this.logger.error(`x-ui provisioning failed for order ${order.id}: ${(err as Error).message}`);
+        await this.notifier.notifyAdmins(
+          `⚠️ x-ui provisioning FAILED for order #${order.number} (${item.productTitle} — ${item.variantTitle}).\nError: ${(err as Error).message}\nA manual delivery has been created instead.`,
+        );
+        return this.createManualDelivery(order.id);
+      }
+    }
 
     if (mode === 'manual_admin') {
       return this.createManualDelivery(order.id);
@@ -82,6 +101,82 @@ export class FulfillmentService {
       return this.createManualDelivery(order.id);
     }
     return this.createManualDelivery(order.id);
+  }
+
+  /**
+   * Creates the VPN client on the 3x-ui panel with volume = plan GB × months
+   * and expiry = months × 30 days, then delivers sub link + config + QR code.
+   */
+  private async provisionXui(
+    order: Order,
+    item: OrderItem,
+    variant: ProductVariant,
+    user: User,
+  ): Promise<FulfillmentOutcome> {
+    const cfg = variant.provisionerConfig as unknown as ProvisionerConfig | null;
+    if (!cfg?.inboundId || !cfg.gb) throw new Error('Plan has no valid provisionerConfig');
+    if (!this.xui.enabled) throw new Error('x-ui is not configured (XUI_* env vars)');
+
+    const months = Math.max(
+      1,
+      Number((item.optionsJson as { durationMonths?: number } | null)?.durationMonths ?? 1),
+    );
+    const gbTotal = cfg.gb * months;
+    const uuid = randomUUID();
+    const subId = randomBytes(8).toString('hex');
+    // Unique, traceable client email/remark on the panel.
+    const email = `ph${order.number}-${subId.slice(0, 6)}`;
+    const remark = `${item.productTitle} #${order.number}`;
+
+    const { configLink, subLink } = await this.xui.provisionClient({
+      inboundId: cfg.inboundId,
+      uuid,
+      email,
+      subId,
+      gbTotal,
+      months,
+      remark,
+    });
+
+    const lang = user.language;
+    const notes = await this.texts.text(lang, 'delivery.vpnNotes');
+    const text = await this.texts.text(lang, 'delivery.vpnAuto', {
+      subLink: subLink || configLink,
+      configLink,
+      gb: gbTotal,
+      months,
+      notes,
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.delivery.create({
+        data: {
+          orderId: order.id,
+          type: 'auto_api',
+          status: 'sent',
+          payloadEnc: this.inventory.encrypt(text),
+          meta: { clientEmail: email, clientUuid: uuid, inboundId: cfg.inboundId, subId, gb: gbTotal, months },
+          sentAt: new Date(),
+        },
+      }),
+      this.prisma.order.update({ where: { id: order.id }, data: { status: 'delivered' } }),
+    ]);
+    this.audit.log({
+      action: 'delivery.xui',
+      entityType: 'Order',
+      entityId: order.id,
+      meta: { inboundId: cfg.inboundId, email, gb: gbTotal, months },
+    });
+
+    await this.notifier.sendMessage(user.telegramId, text);
+    // QR of the subscription link (falls back to the raw config link).
+    try {
+      const qr = await toBuffer(subLink || configLink, { width: 512, margin: 2 });
+      await this.notifier.sendPhotoBuffer(user.telegramId, qr);
+    } catch (err) {
+      this.logger.warn(`QR generation failed for order ${order.id}: ${(err as Error).message}`);
+    }
+    return { kind: 'delivered', payload: text };
   }
 
   private async createManualDelivery(orderId: string): Promise<FulfillmentOutcome> {

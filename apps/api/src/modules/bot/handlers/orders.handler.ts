@@ -4,6 +4,7 @@ import type { User } from '@premium-hub/db';
 import { formatAmount, toFaDigits } from '@premium-hub/shared';
 import { OrdersService } from '../../orders/orders.service';
 import { InventoryService } from '../../fulfillment/inventory.service';
+import { XuiService } from '../../xui/xui.service';
 import { BotCommonService } from '../bot-common.service';
 import type { BotContext } from '../bot.context';
 
@@ -14,6 +15,7 @@ export class OrdersHandler {
     private readonly common: BotCommonService,
     private readonly orders: OrdersService,
     private readonly inventory: InventoryService,
+    private readonly xui: XuiService,
   ) {}
 
   register(bot: Bot<BotContext>) {
@@ -119,13 +121,27 @@ export class OrdersHandler {
         payload = '—';
       }
     }
-    const text = await this.common.t(lang, 'services.detail', {
+    let text = await this.common.t(lang, 'services.detail', {
       id: lang === 'fa' ? toFaDigits(order.number) : order.number,
       product: item?.productTitle ?? '—',
       plan: item?.variantTitle ?? '—',
       date: delivery?.sentAt ? this.formatDate(delivery.sentAt, lang) : '—',
       payload,
     });
+
+    // Live remaining traffic for x-ui provisioned VPN services.
+    const meta = delivery?.meta as { clientEmail?: string; gb?: number } | null;
+    if (meta?.clientEmail && this.xui.enabled) {
+      const traffic = await this.xui.clientTraffic(meta.clientEmail);
+      if (traffic) {
+        const usedGb = ((traffic.up + traffic.down) / 1024 ** 3).toFixed(1);
+        const totalGb = traffic.total > 0 ? (traffic.total / 1024 ** 3).toFixed(0) : String(meta.gb ?? '∞');
+        text += `\n\n${await this.common.t(lang, 'services.traffic', {
+          used: lang === 'fa' ? toFaDigits(usedGb) : usedGb,
+          total: lang === 'fa' ? toFaDigits(totalGb) : totalGb,
+        })}`;
+      }
+    }
     const keyboard = new InlineKeyboard().text(await this.common.t(lang, 'common.back'), 'nav:services');
     await ctx.editMessageText(text, { reply_markup: keyboard }).catch(() => ctx.reply(text, { reply_markup: keyboard }));
   }

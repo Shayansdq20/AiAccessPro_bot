@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Api, InlineKeyboard } from 'grammy';
+import { Api, InlineKeyboard, InputFile } from 'grammy';
 import { config } from '../../config';
 
 /**
@@ -23,6 +23,21 @@ export class NotifierService {
       return true;
     } catch (err) {
       this.logger.warn(`sendMessage to ${chatId} failed: ${(err as Error).message}`);
+      return false;
+    }
+  }
+
+  /** Send a generated image (e.g. QR code) with optional caption. */
+  async sendPhotoBuffer(
+    chatId: string | number | bigint,
+    image: Buffer,
+    caption?: string,
+  ): Promise<boolean> {
+    try {
+      await this.api.sendPhoto(String(chatId), new InputFile(image, 'qr.png'), { caption });
+      return true;
+    } catch (err) {
+      this.logger.warn(`sendPhotoBuffer to ${chatId} failed: ${(err as Error).message}`);
       return false;
     }
   }

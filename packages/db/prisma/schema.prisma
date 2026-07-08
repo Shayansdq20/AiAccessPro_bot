@@ -80,6 +80,7 @@ enum DiscountType {
 
 enum DeliveryType {
   auto_inventory
+  auto_api
   manual
 }
 
@@ -210,6 +211,10 @@ model ProductVariant {
   // Tab grouping label, e.g. "1 month". Variants sharing a group appear
   // under the same Telegram tab.
   optionGroup     String?
+  // API provisioning instead of inventory: null = none, "xui" = 3x-ui panel.
+  provisioner     String?
+  // Provisioner settings, for xui: { "inboundId": 3, "gb": 30 }
+  provisionerConfig Json?
   sortOrder       Int             @default(0)
   isActive        Boolean         @default(true)
   createdAt       DateTime        @default(now())
@@ -379,6 +384,8 @@ model Delivery {
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
   // Encrypted copy of what was sent to the user (auto payload or manual message).
   payloadEnc      String?
+  // Provisioner bookkeeping, for xui: { clientEmail, clientUuid, inboundId, subId, gb, months }
+  meta            Json?
   sentByAdminId   String?
   sentAt          DateTime?
   createdAt       DateTime       @default(now())

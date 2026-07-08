@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { z } from 'zod';
+import { Prisma } from '@premium-hub/db';
 import { AdminAuthGuard, AdminRequest, Roles } from '../admin-auth/admin-auth.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -42,7 +44,24 @@ const variantSchema = z.object({
   optionGroup: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.coerce.boolean().default(true),
+  // x-ui auto provisioning (empty string = disabled)
+  provisioner: z.enum(['', 'xui']).optional(),
+  provisionerInboundId: z.coerce.number().int().positive().optional(),
+  provisionerGb: z.coerce.number().positive().optional(),
 });
+
+/** Maps the flat form fields to the stored provisioner columns. */
+function provisionerData(data: z.infer<typeof variantSchema> | Partial<z.infer<typeof variantSchema>>) {
+  if (data.provisioner === undefined) return {};
+  if (data.provisioner !== 'xui') return { provisioner: null, provisionerConfig: Prisma.DbNull };
+  if (!data.provisionerInboundId || !data.provisionerGb) {
+    throw new BadRequestException('x-ui plans need an inbound and a GB volume');
+  }
+  return {
+    provisioner: 'xui',
+    provisionerConfig: { inboundId: data.provisionerInboundId, gb: data.provisionerGb },
+  };
+}
 
 /**
  * Catalog CRUD. Deletes try a hard delete first; when historical relations
@@ -192,8 +211,14 @@ export class CatalogAdminController {
     const data = variantSchema.parse(body);
     const product = await this.prisma.product.findFirst({ where: { id: data.productId, isActive: true } });
     if (!product) throw new NotFoundException('Product not found');
+    const { provisioner: _p, provisionerInboundId: _i, provisionerGb: _g, ...rest } = data;
     const created = await this.prisma.productVariant.create({
-      data: { ...data, price: BigInt(data.price), optionGroup: data.optionGroup?.trim() || null },
+      data: {
+        ...rest,
+        price: BigInt(data.price),
+        optionGroup: data.optionGroup?.trim() || null,
+        ...provisionerData(data),
+      },
     });
     this.audit.log({ adminId: req.admin.id, action: 'catalog.variant.create', entityType: 'ProductVariant', entityId: created.id });
     return created;
@@ -202,12 +227,14 @@ export class CatalogAdminController {
   @Patch('variants/:id')
   async updateVariant(@Param('id') id: string, @Body() body: unknown, @Req() req: AdminRequest) {
     const data = variantSchema.partial().parse(body);
+    const { provisioner: _p, provisionerInboundId: _i, provisionerGb: _g, ...rest } = data;
     const updated = await this.prisma.productVariant.update({
       where: { id },
       data: {
-        ...data,
+        ...rest,
         price: data.price != null ? BigInt(data.price) : undefined,
         optionGroup: data.optionGroup !== undefined ? data.optionGroup.trim() || null : undefined,
+        ...provisionerData(data),
       },
     });
     this.audit.log({ adminId: req.admin.id, action: 'catalog.variant.update', entityType: 'ProductVariant', entityId: id });
