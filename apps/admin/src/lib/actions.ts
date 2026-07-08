@@ -6,11 +6,14 @@ import { revalidatePath } from 'next/cache';
 import { apiFetch, apiLogin, TOKEN_COOKIE } from './api';
 import { LANG_COOKIE } from './i18n';
 
-export async function loginAction(_prev: { error: boolean }, formData: FormData) {
+export async function loginAction(
+  _prev: { error: 'invalid' | 'unreachable' | null },
+  formData: FormData,
+): Promise<{ error: 'invalid' | 'unreachable' | null }> {
   const email = String(formData.get('email') ?? '');
   const password = String(formData.get('password') ?? '');
   const result = await apiLogin(email, password);
-  if (!result) return { error: true };
+  if (!result.ok) return { error: result.reason };
   (await cookies()).set(TOKEN_COOKIE, result.token, {
     httpOnly: true,
     sameSite: 'lax',

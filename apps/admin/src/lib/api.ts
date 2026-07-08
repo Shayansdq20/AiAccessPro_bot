@@ -37,19 +37,29 @@ export async function apiFetch<T>(path: string, init?: RequestInit & { rawRespon
   return (await res.json()) as T;
 }
 
-/** Login is the only unauthenticated API call. */
-export async function apiLogin(email: string, password: string) {
-  const res = await fetch(`${API_BASE}/admin/auth/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-    cache: 'no-store',
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as {
-    token: string;
-    admin: { id: string; email: string; name: string; role: string };
-  };
+export type LoginResult =
+  | { ok: true; token: string; admin: { id: string; email: string; name: string; role: string } }
+  | { ok: false; reason: 'invalid' | 'unreachable' };
+
+/** Login is the only unauthenticated API call. Never throws. */
+export async function apiLogin(email: string, password: string): Promise<LoginResult> {
+  try {
+    const res = await fetch(`${API_BASE}/admin/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+      cache: 'no-store',
+    });
+    if (!res.ok) return { ok: false, reason: 'invalid' };
+    const data = (await res.json()) as {
+      token: string;
+      admin: { id: string; email: string; name: string; role: string };
+    };
+    return { ok: true, ...data };
+  } catch {
+    // API container down/unreachable must not crash the login page.
+    return { ok: false, reason: 'unreachable' };
+  }
 }
 
 export function apiBase(): string {
