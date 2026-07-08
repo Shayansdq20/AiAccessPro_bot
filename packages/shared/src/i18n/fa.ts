@@ -11,6 +11,7 @@ export const fa: Record<MessageKey, string> = {
   'menu.myServices': '🧾 سرویس‌های من',
   'menu.orders': '🛒 سفارش‌ها',
   'menu.discount': '🎁 کد تخفیف',
+  'menu.referral': '👥 دعوت دوستان',
   'menu.support': '💬 پشتیبانی',
   'menu.profile': '👤 پروفایل',
   'menu.language': '🌐 زبان',
@@ -104,6 +105,15 @@ export const fa: Record<MessageKey, string> = {
   'discount.cleared': 'کد تخفیف ذخیره‌شده شما حذف شد.',
   'discount.percentValue': '{value}٪ تخفیف',
   'discount.fixedValue': '{value} تخفیف',
+
+  // Referral
+  'referral.screen':
+    '👥 دعوت از دوستان\n\nلینک اختصاصی‌ات را با دوستانت به اشتراک بگذار. وقتی {required} نفر هرکدام حداقل {minSpend} خرید کنند، {reward} به کیف پولت اضافه می‌شود.\n\n🔗 لینک شما:\n{link}\n\n📊 دعوت‌شده: {invited} | واجد شرایط: {qualified}/{required}\n💰 پاداش دریافتی: {earned}',
+  'referral.anySpend': 'یک محصول',
+  'referral.noProgram':
+    '👥 دعوت از دوستان\n\n🔗 لینک شما:\n{link}\n\n📊 دعوت‌شده: {invited}\n\nالان طرح پاداش فعالی نیست — ولی دعوت کن، ممکنه به‌زودی برگرده!',
+  'referral.rewardEarned':
+    '🎉 پاداش دعوت دوستان!\nمبلغ {amount} بابت دعوت دوستان به کیف پولت اضافه شد.\nموجودی جدید: {balance}',
 
   // Support
   'support.prompt': '💬 پیام خود را برای پشتیبانی بنویسید. در اولین فرصت پاسخ داده می‌شود.',

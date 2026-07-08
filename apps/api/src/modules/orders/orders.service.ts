@@ -8,6 +8,7 @@ import { DiscountsService } from '../discounts/discounts.service';
 import { FulfillmentService, FulfillmentOutcome } from '../fulfillment/fulfillment.service';
 import { InventoryService } from '../fulfillment/inventory.service';
 import { AuditService } from '../audit/audit.service';
+import { ReferralService } from '../referral/referral.service';
 
 export interface Quote {
   variantId: string;
@@ -35,6 +36,7 @@ export class OrdersService {
     private readonly fulfillment: FulfillmentService,
     private readonly inventory: InventoryService,
     private readonly audit: AuditService,
+    private readonly referral: ReferralService,
   ) {}
 
   /** Price a variant for a user, applying duration pricing and saved discount. */
@@ -135,6 +137,8 @@ export class OrdersService {
         meta: { total: order.total.toString(), userId },
       });
       const fulfillment = await this.fulfillment.fulfillOrder(order.id);
+      // A successful purchase may qualify the buyer's inviter for a reward.
+      await this.referral.onReferredPurchase(userId);
       return { ok: true, order, fulfillment };
     } catch (err) {
       if (err instanceof InsufficientBalanceError) {

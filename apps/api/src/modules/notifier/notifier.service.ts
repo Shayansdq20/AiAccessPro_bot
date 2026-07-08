@@ -12,9 +12,22 @@ import { config } from '../../config';
 export class NotifierService {
   readonly api = new Api(config.telegram.botToken);
   private readonly logger = new Logger(NotifierService.name);
+  private cachedUsername: string | null = null;
 
   get adminChatIds(): string[] {
     return config.telegram.adminIds;
+  }
+
+  /** Bot @username (cached), used to build referral deep links. */
+  async botUsername(): Promise<string> {
+    if (this.cachedUsername) return this.cachedUsername;
+    try {
+      const me = await this.api.getMe();
+      this.cachedUsername = me.username;
+      return me.username;
+    } catch {
+      return '';
+    }
   }
 
   async sendMessage(

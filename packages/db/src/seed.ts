@@ -15,6 +15,20 @@ async function main() {
   const encryptionKey = process.env.ENCRYPTION_KEY;
   if (!encryptionKey) throw new Error('ENCRYPTION_KEY is required to seed inventory');
 
+  // Default referral program (idempotent): invite 3 buyers -> 200,000 Toman.
+  if ((await prisma.referralProgram.count()) === 0) {
+    await prisma.referralProgram.create({
+      data: {
+        name: 'دعوت ۳ دوست',
+        requiredReferrals: 3,
+        minReferralSpend: 0n,
+        rewardAmount: 200000n,
+        repeatable: true,
+      },
+    });
+    console.log('Default referral program seeded.');
+  }
+
   const existing = await prisma.productCategory.count();
   if (existing > 0) {
     console.log('Catalog already seeded, skipping.');

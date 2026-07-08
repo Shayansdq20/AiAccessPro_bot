@@ -15,6 +15,7 @@ export type MenuAction =
   | 'myServices'
   | 'orders'
   | 'discount'
+  | 'referral'
   | 'support'
   | 'profile'
   | 'language';
@@ -25,6 +26,7 @@ const MENU_KEYS: Record<MenuAction, MessageKey> = {
   myServices: 'menu.myServices',
   orders: 'menu.orders',
   discount: 'menu.discount',
+  referral: 'menu.referral',
   support: 'menu.support',
   profile: 'menu.profile',
   language: 'menu.language',

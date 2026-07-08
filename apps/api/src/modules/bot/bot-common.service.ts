@@ -44,9 +44,11 @@ export class BotCommonService {
       .text(labels.orders)
       .row()
       .text(labels.discount)
-      .text(labels.support)
+      .text(labels.referral)
       .row()
+      .text(labels.support)
       .text(labels.profile)
+      .row()
       .text(labels.language)
       .resized()
       .persistent();

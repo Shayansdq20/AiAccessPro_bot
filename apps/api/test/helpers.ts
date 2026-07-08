@@ -14,6 +14,7 @@ export async function truncateAll(prisma: PrismaService): Promise<void> {
       "ManualReceipt", "Payment",
       "OrderItem", "Order",
       "InventoryItem", "ProductOption", "ProductVariant", "Product", "ProductCategory",
+      "ReferralReward", "ReferralProgram",
       "WalletLedger", "Wallet", "User",
       "BotSession", "Setting", "PriceRate"
     CASCADE`);

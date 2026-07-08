@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Bot, InlineKeyboard } from 'grammy';
 import type { User } from '@premium-hub/db';
-import { formatAmount, parseAmount } from '@premium-hub/shared';
+import { formatAmount, parseAmount, toFaDigits } from '@premium-hub/shared';
 import { UsersService } from '../../users/users.service';
 import { WalletService } from '../../wallet/wallet.service';
 import { DiscountsService } from '../../discounts/discounts.service';
 import { SupportService } from '../../support/support.service';
+import { ReferralService } from '../../referral/referral.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { BotCommonService } from '../bot-common.service';
 import { CatalogHandler } from './catalog.handler';
@@ -28,6 +29,7 @@ export class MiscHandler {
     private readonly wallet: WalletService,
     private readonly discounts: DiscountsService,
     private readonly support: SupportService,
+    private readonly referral: ReferralService,
     private readonly prisma: PrismaService,
     private readonly catalogHandler: CatalogHandler,
     private readonly walletHandler: WalletHandler,
@@ -36,7 +38,14 @@ export class MiscHandler {
 
   register(bot: Bot<BotContext>) {
     bot.command('start', async (ctx) => {
+      // Detect brand-new users so referral attribution only applies to them.
+      const existing = ctx.from ? await this.users.byTelegramId(BigInt(ctx.from.id)) : null;
       const user = await this.common.user(ctx);
+      const refCode = this.referral.parseStartPayload(ctx.match);
+      if (!existing && refCode) {
+        await this.referral.attachReferrer(user, refCode);
+      }
+      await this.referral.ensureCode(user);
       const text = await this.common.t(user.language, 'start.welcome', {
         name: this.common.greetingName(user),
       });
@@ -103,6 +112,8 @@ export class MiscHandler {
           return this.ordersHandler.showServices(ctx, user);
         case 'discount':
           return this.promptDiscount(ctx, user);
+        case 'referral':
+          return this.showReferral(ctx, user);
         case 'support':
           return this.promptSupport(ctx, user);
         case 'profile':
@@ -191,6 +202,37 @@ export class MiscHandler {
     ctx.session.pending = { type: 'discount' };
     const keyboard = new InlineKeyboard().text(await this.common.t(user.language, 'common.cancel'), 'dcancel');
     await ctx.reply(await this.common.t(user.language, 'discount.prompt'), { reply_markup: keyboard });
+  }
+
+  private async showReferral(ctx: BotContext, user: User) {
+    const lang = user.language;
+    const stats = await this.referral.statsFor(user);
+    const fa = lang === 'fa';
+    const num = (n: number | bigint) => (fa ? toFaDigits(n) : String(n));
+    if (!stats.program) {
+      await ctx.reply(
+        await this.common.t(lang, 'referral.noProgram', {
+          link: stats.link,
+          invited: num(stats.invitedCount),
+        }),
+      );
+      return;
+    }
+    const minSpend =
+      stats.program.minReferralSpend > 0n
+        ? formatAmount(stats.program.minReferralSpend, lang)
+        : await this.common.t(lang, 'referral.anySpend');
+    await ctx.reply(
+      await this.common.t(lang, 'referral.screen', {
+        link: stats.link,
+        invited: num(stats.invitedCount),
+        qualified: num(stats.qualifiedCount),
+        required: num(stats.program.requiredReferrals),
+        minSpend,
+        reward: formatAmount(stats.program.rewardAmount, lang),
+        earned: formatAmount(stats.earnedTotal, lang),
+      }),
+    );
   }
 
   private async promptSupport(ctx: BotContext, user: User) {

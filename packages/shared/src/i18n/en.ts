@@ -10,6 +10,7 @@ export const en = {
   'menu.myServices': '🧾 My Services',
   'menu.orders': '🛒 Orders',
   'menu.discount': '🎁 Discount Code',
+  'menu.referral': '👥 Invite Friends',
   'menu.support': '💬 Support',
   'menu.profile': '👤 Profile',
   'menu.language': '🌐 Language',
@@ -106,6 +107,15 @@ export const en = {
   'discount.cleared': 'Your saved discount code was removed.',
   'discount.percentValue': '{value}% off',
   'discount.fixedValue': '{value} off',
+
+  // Referral
+  'referral.screen':
+    '👥 Invite Friends\n\nShare your personal link. When {required} friends each buy at least {minSpend}, you get {reward} added to your wallet.\n\n🔗 Your link:\n{link}\n\n📊 Invited: {invited} | Qualified: {qualified}/{required}\n💰 Rewards earned: {earned}',
+  'referral.anySpend': 'a product',
+  'referral.noProgram':
+    '👥 Invite Friends\n\n🔗 Your link:\n{link}\n\n📊 Invited: {invited}\n\nNo active referral reward right now — invite anyway, rewards may return soon!',
+  'referral.rewardEarned':
+    '🎉 Referral reward!\n{amount} was added to your wallet for inviting friends.\nNew balance: {balance}',
 
   // Support
   'support.prompt': '💬 Write your message for support. It will be answered as soon as possible.',

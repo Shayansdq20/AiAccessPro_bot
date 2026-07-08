@@ -7,6 +7,7 @@ import { DiscountsService } from '../src/modules/discounts/discounts.service';
 import { InventoryService } from '../src/modules/fulfillment/inventory.service';
 import { FulfillmentService } from '../src/modules/fulfillment/fulfillment.service';
 import { OrdersService } from '../src/modules/orders/orders.service';
+import { ReferralService } from '../src/modules/referral/referral.service';
 import { NotifierService } from '../src/modules/notifier/notifier.service';
 import { SettingsService } from '../src/modules/settings/settings.service';
 import { TextsService } from '../src/modules/settings/texts.service';
@@ -45,7 +46,8 @@ const fakeXui = {
   sumTraffic: async () => null,
 } as unknown as XuiService;
 const fulfillment = new FulfillmentService(prisma, inventory, notifier, texts, audit, fakeXui);
-const orders = new OrdersService(prisma, wallet, catalog, discounts, fulfillment, inventory, audit);
+const referral = new ReferralService(prisma, wallet, notifier, texts, audit);
+const orders = new OrdersService(prisma, wallet, catalog, discounts, fulfillment, inventory, audit, referral);
 
 const KEY = 'test-encryption-key';
 
@@ -266,7 +268,7 @@ describe('Checkout + fulfillment', () => {
       },
     } as unknown as XuiService;
     const failingFulfillment = new FulfillmentService(prisma, inventory, notifier, texts, audit, failingXui);
-    const failingOrders = new OrdersService(prisma, wallet, catalog, discounts, failingFulfillment, inventory, audit);
+    const failingOrders = new OrdersService(prisma, wallet, catalog, discounts, failingFulfillment, inventory, audit, referral);
 
     const quote = await failingOrders.quote(user.id, variant.id);
     const result = await failingOrders.checkout(user.id, quote);

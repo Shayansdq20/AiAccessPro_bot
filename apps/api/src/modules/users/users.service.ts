@@ -14,6 +14,10 @@ function generateDisplayUsername(): string {
   return `user_${randomBytes(4).toString('hex')}`;
 }
 
+function generateReferralCode(): string {
+  return randomBytes(4).toString('hex');
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -43,6 +47,7 @@ export class UsersService {
             firstName: identity.firstName,
             lastName: identity.lastName,
             displayUsername: generateDisplayUsername(),
+            referralCode: generateReferralCode(),
             wallet: { create: {} },
           },
         });

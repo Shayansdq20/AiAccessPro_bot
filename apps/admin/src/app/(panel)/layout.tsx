@@ -21,6 +21,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     { href: '/catalog/variants', label: `🧾 ${t.plans}` },
     { href: '/catalog/inventory', label: `🔐 ${t.inventory}` },
     { href: '/discounts', label: `🎁 ${t.discounts}` },
+    { href: '/referral', label: `👥 ${t.referral}` },
     { href: '/support', label: `💬 ${t.support}` },
     { href: '/bot-texts', label: `📝 ${t.botTexts}` },
     { href: '/payment-settings', label: `⚙️ ${t.paymentSettings}` },

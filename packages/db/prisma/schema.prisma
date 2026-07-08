@@ -120,16 +120,23 @@ model User {
   displayUsername  String     @unique
   language         Language   @default(fa)
   status           UserStatus @default(active)
+  // Referral: own share code, and who invited this user (set once, at signup).
+  referralCode     String?    @unique
+  referredById     String?
+  referredBy       User?      @relation("UserReferrals", fields: [referredById], references: [id])
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  wallet      Wallet?
-  orders      Order[]
-  payments    Payment[]
-  tickets     SupportTicket[]
-  redemptions DiscountRedemption[]
+  wallet          Wallet?
+  orders          Order[]
+  payments        Payment[]
+  tickets         SupportTicket[]
+  redemptions     DiscountRedemption[]
+  referrals       User[]           @relation("UserReferrals")
+  referralRewards ReferralReward[]
 
   @@index([telegramUsername])
+  @@index([referredById])
 }
 
 model Wallet {
@@ -468,6 +475,44 @@ model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Referral programs (invite friends)
+// ---------------------------------------------------------------------------
+
+model ReferralProgram {
+  id                String   @id @default(cuid())
+  name              String
+  // How many qualified referrals complete one reward batch.
+  requiredReferrals Int      @default(3)
+  // Each referred user must have paid at least this (Toman) to count.
+  // 0 means "any purchase" (paid total > 0).
+  minReferralSpend  BigInt   @default(0)
+  // Wallet credit granted to the inviter per completed batch.
+  rewardAmount      BigInt
+  // If true, the inviter earns again for every further full batch.
+  repeatable        Boolean  @default(true)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  rewards ReferralReward[]
+}
+
+model ReferralReward {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id])
+  programId  String
+  program    ReferralProgram @relation(fields: [programId], references: [id])
+  // 0-based batch this reward paid for; guarantees one reward per batch.
+  batchIndex Int
+  amount     BigInt
+  createdAt  DateTime        @default(now())
+
+  @@unique([userId, programId, batchIndex])
+  @@index([userId])
 }
 
 // Durable bot conversation/session state (restart-safe flows).

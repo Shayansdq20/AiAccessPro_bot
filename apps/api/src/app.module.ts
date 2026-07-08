@@ -19,6 +19,7 @@ import { ZarinpalProvider } from './modules/payments/providers/zarinpal.provider
 import { SupportService } from './modules/support/support.service';
 import { AuditService } from './modules/audit/audit.service';
 import { XuiService } from './modules/xui/xui.service';
+import { ReferralService } from './modules/referral/referral.service';
 
 // Admin auth
 import { AdminAuthService } from './modules/admin-auth/admin-auth.service';
@@ -48,6 +49,7 @@ import { SettingsAdminController } from './modules/admin-api/settings.controller
 import { SupportAdminController } from './modules/admin-api/support-admin.controller';
 import { AuditController } from './modules/admin-api/audit.controller';
 import { XuiAdminController } from './modules/admin-api/xui.controller';
+import { ReferralAdminController } from './modules/referral/referral-admin.controller';
 
 @Module({
   controllers: [
@@ -65,6 +67,7 @@ import { XuiAdminController } from './modules/admin-api/xui.controller';
     SupportAdminController,
     AuditController,
     XuiAdminController,
+    ReferralAdminController,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: BigIntInterceptor },
@@ -84,6 +87,7 @@ import { XuiAdminController } from './modules/admin-api/xui.controller';
     SupportService,
     AuditService,
     XuiService,
+    ReferralService,
     AdminAuthService,
     AdminAuthGuard,
     BotCommonService,
