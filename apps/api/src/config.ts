@@ -51,6 +51,9 @@ export const config = {
   // 3x-ui (Sanaei) panel for automatic VPN provisioning.
   xui: {
     baseUrl: optional('XUI_BASE_URL').replace(/\/$/, ''),
+    // v3 panels: create a token in panel Settings -> API Tokens (preferred;
+    // bypasses CSRF). v2 panels: leave empty and set username/password.
+    apiToken: optional('XUI_API_TOKEN'),
     username: optional('XUI_USERNAME'),
     password: optional('XUI_PASSWORD'),
     // Subscription base, e.g. https://panel.example.com:2096/sub

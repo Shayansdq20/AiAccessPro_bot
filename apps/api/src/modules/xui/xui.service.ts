@@ -25,7 +25,10 @@ export class XuiService {
   private apiGen: 2 | 3 | null = null;
 
   get enabled(): boolean {
-    return Boolean(config.xui.baseUrl && config.xui.username && config.xui.password);
+    return Boolean(
+      config.xui.baseUrl &&
+        (config.xui.apiToken || (config.xui.username && config.xui.password)),
+    );
   }
 
   get publicHost(): string {
@@ -73,7 +76,30 @@ export class XuiService {
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     if (!this.enabled) throw new Error('x-ui is not configured (XUI_* env vars)');
-    // Re-login when the session is older than 30 minutes.
+
+    // v3 panels: Bearer API token (bypasses the panel's CSRF middleware —
+    // cookie logins from non-browsers are rejected with an empty 403 there).
+    if (config.xui.apiToken) {
+      const res = await fetch(`${config.xui.baseUrl}${path}`, {
+        ...init,
+        headers: {
+          authorization: `Bearer ${config.xui.apiToken}`,
+          accept: 'application/json',
+          'user-agent': XuiService.UA,
+          ...init?.headers,
+        },
+        redirect: 'manual',
+      });
+      const body = (await res.json().catch(() => null)) as XuiResponse<T> | null;
+      if (!body || !body.success) {
+        const err = new Error(`x-ui ${path} failed: ${body?.msg ?? `HTTP ${res.status}`}`);
+        (err as Error & { status?: number }).status = res.status;
+        throw err;
+      }
+      return body.obj as T;
+    }
+
+    // Legacy v2 panels: session-cookie login.
     if (!this.cookie || Date.now() - this.cookieAt > 30 * 60_000) await this.login();
 
     const doFetch = () =>
