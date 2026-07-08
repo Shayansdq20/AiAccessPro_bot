@@ -25,6 +25,10 @@ export class DiscountsService {
     return this.validateCode(code, userId, orderTotal);
   }
 
+  findById(codeId: string) {
+    return this.prisma.discountCode.findUnique({ where: { id: codeId } });
+  }
+
   private async validateCode(
     code: DiscountCode,
     userId: string,

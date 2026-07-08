@@ -63,9 +63,22 @@ export const en = {
 
   // Checkout
   'checkout.confirm':
-    '🛒 Purchase summary\n\nProduct: {product}\nPlan: {plan}\nPrice: {amount}\nWallet balance: {balance}\n\nConfirm the purchase?',
+    '🛒 Purchase summary\n\nProduct: {product}\nPlan: {plan}\n\n{priceBlock}\nWallet balance: {balance}\n\nConfirm the purchase?',
   'checkout.confirmButton': '✅ Confirm purchase',
+  'checkout.pricePlain': '💵 Price: {amount}',
+  'checkout.priceDiscounted':
+    '💵 Original price: {subtotal}\n🎁 Discount ({code}): -{discount}\n✅ You pay: {total}',
+  'checkout.discountRejected':
+    '⚠️ Discount code {code} was not applied ({reason}). You can add it in "Discount Code".',
+  'checkout.applyDiscount': '🎁 Have a discount code?',
+  'checkout.successDiscount': '✅ Order #{id} placed. You paid {amount} (saved {discount} with {code}).',
   'checkout.discountLine': 'Discount: -{amount}',
+  'discount.reason.not_found': 'code not found',
+  'discount.reason.inactive': 'code disabled',
+  'discount.reason.expired': 'expired',
+  'discount.reason.max_uses': 'usage limit reached',
+  'discount.reason.max_uses_per_user': 'you already used it',
+  'discount.reason.min_order': 'order total too low',
   'checkout.insufficient':
     'Your wallet balance is not enough.\nPrice: {amount}\nBalance: {balance}\nShortfall: {shortfall}\n\nCharge exactly the shortfall to complete this purchase.',
   'checkout.chargeShortfall': '➕ Charge {amount}',

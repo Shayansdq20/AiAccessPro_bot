@@ -19,6 +19,10 @@ export interface Quote {
   discountAmount: bigint;
   total: bigint;
   discountCode?: DiscountCode;
+  /** How a saved discount code resolved for this quote, for clear UX. */
+  discountStatus: 'none' | 'applied' | 'rejected';
+  discountCodeText?: string;
+  discountReason?: string;
 }
 
 export type CheckoutResult =
@@ -47,11 +51,22 @@ export class OrdersService {
 
     let discountAmount = 0n;
     let discountCode: DiscountCode | undefined;
+    let discountStatus: Quote['discountStatus'] = 'none';
+    let discountCodeText: string | undefined;
+    let discountReason: string | undefined;
     if (discountCodeId) {
       const validation = await this.discounts.validateById(discountCodeId, userId, subtotal);
       if (validation.ok) {
         discountCode = validation.code;
         discountAmount = this.discounts.computeAmount(validation.code, subtotal);
+        discountStatus = 'applied';
+        discountCodeText = validation.code.code;
+      } else {
+        // Surface the rejection so the user is never charged full price silently.
+        discountStatus = 'rejected';
+        discountReason = validation.reason;
+        const code = await this.discounts.findById(discountCodeId);
+        discountCodeText = code?.code ?? undefined;
       }
     }
     return {
@@ -63,6 +78,9 @@ export class OrdersService {
       discountAmount,
       total: subtotal - discountAmount,
       discountCode,
+      discountStatus,
+      discountCodeText,
+      discountReason,
     };
   }
 

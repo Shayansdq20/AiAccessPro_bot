@@ -64,9 +64,22 @@ export const fa: Record<MessageKey, string> = {
 
   // Checkout
   'checkout.confirm':
-    '🛒 خلاصه خرید\n\nمحصول: {product}\nپلن: {plan}\nقیمت: {amount}\nموجودی کیف پول: {balance}\n\nخرید را تایید می‌کنید؟',
+    '🛒 خلاصه خرید\n\nمحصول: {product}\nپلن: {plan}\n\n{priceBlock}\nموجودی کیف پول: {balance}\n\nخرید را تایید می‌کنید؟',
   'checkout.confirmButton': '✅ تایید خرید',
+  'checkout.pricePlain': '💵 قیمت: {amount}',
+  'checkout.priceDiscounted':
+    '💵 قیمت اصلی: {subtotal}\n🎁 تخفیف ({code}): -{discount}\n✅ مبلغ قابل پرداخت: {total}',
+  'checkout.discountRejected':
+    '⚠️ کد تخفیف {code} اعمال نشد ({reason}). می‌توانید از بخش «کد تخفیف» دوباره اضافه کنید.',
+  'checkout.applyDiscount': '🎁 کد تخفیف داری؟',
+  'checkout.successDiscount': '✅ سفارش #{id} ثبت شد. مبلغ پرداختی: {amount} (با کد {code} مبلغ {discount} تخفیف گرفتی).',
   'checkout.discountLine': 'تخفیف: {amount}-',
+  'discount.reason.not_found': 'کد پیدا نشد',
+  'discount.reason.inactive': 'کد غیرفعال است',
+  'discount.reason.expired': 'منقضی شده',
+  'discount.reason.max_uses': 'سقف استفاده پر شده',
+  'discount.reason.max_uses_per_user': 'قبلا استفاده کرده‌ای',
+  'discount.reason.min_order': 'مبلغ سفارش کمتر از حد لازم است',
   'checkout.insufficient':
     'موجودی کیف پول شما کافی نیست.\nقیمت: {amount}\nموجودی: {balance}\nکمبود: {shortfall}\n\nبرای تکمیل خرید، دقیقا مبلغ کمبود را شارژ کنید.',
   'checkout.chargeShortfall': '➕ شارژ {amount}',

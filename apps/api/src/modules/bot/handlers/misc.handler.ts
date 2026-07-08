@@ -90,6 +90,12 @@ export class MiscHandler {
       await ctx.editMessageText(await this.common.t(user.language, 'common.cancelled')).catch(() => undefined);
     });
 
+    // "Have a discount code?" button on the checkout screen.
+    bot.callbackQuery('nav:discount', async (ctx) => {
+      await ctx.answerCallbackQuery();
+      await this.promptDiscount(ctx, await this.common.user(ctx));
+    });
+
     // Text router — pending flows first, then menu buttons.
     bot.on('message:text', async (ctx) => {
       const user = await this.common.user(ctx);

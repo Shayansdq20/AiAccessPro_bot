@@ -3,7 +3,7 @@ import { Bot, InlineKeyboard } from 'grammy';
 import type { User } from '@premium-hub/db';
 import { durationPrice, formatAmount, toFaDigits } from '@premium-hub/shared';
 import { CatalogService } from '../../catalog/catalog.service';
-import { OrdersService } from '../../orders/orders.service';
+import { OrdersService, type Quote } from '../../orders/orders.service';
 import { WalletService } from '../../wallet/wallet.service';
 import { BotCommonService } from '../bot-common.service';
 import type { BotContext } from '../bot.context';
@@ -141,22 +141,44 @@ export class CatalogHandler {
     const variant = await this.catalog.variantForPurchase(variantId);
     const balance = await this.wallet.balanceOf(user.id);
 
-    let text = await this.common.t(lang, 'checkout.confirm', {
+    const text = await this.common.t(lang, 'checkout.confirm', {
       product: quote.productTitle,
       plan: quote.variantTitle,
-      amount: formatAmount(quote.total, lang),
+      priceBlock: await this.priceBlock(lang, quote),
       balance: formatAmount(balance, lang),
     });
-    if (quote.discountAmount > 0n) {
-      text += `\n${await this.common.t(lang, 'checkout.discountLine', {
-        amount: formatAmount(quote.discountAmount, lang),
-      })}`;
-    }
     const keyboard = new InlineKeyboard()
       .text(await this.common.t(lang, 'checkout.confirmButton'), `buy:${variantId}:${months}`)
-      .row()
-      .text(await this.common.t(lang, 'common.back'), `prod:${variant.productId}${variant.product.useDurationTabs ? `:d:${months}` : ''}`);
+      .row();
+    // Offer to add a code when none is applied yet.
+    if (quote.discountStatus !== 'applied') {
+      keyboard.text(await this.common.t(lang, 'checkout.applyDiscount'), 'nav:discount').row();
+    }
+    keyboard.text(await this.common.t(lang, 'common.back'), `prod:${variant.productId}${variant.product.useDurationTabs ? `:d:${months}` : ''}`);
     await ctx.editMessageText(text, { reply_markup: keyboard }).catch(() => ctx.reply(text, { reply_markup: keyboard }));
+  }
+
+  /** Clear price breakdown: plain, discounted, or full-price-with-rejection-note. */
+  private async priceBlock(lang: User['language'], quote: Quote): Promise<string> {
+    if (quote.discountStatus === 'applied' && quote.discountAmount > 0n) {
+      return this.common.t(lang, 'checkout.priceDiscounted', {
+        subtotal: formatAmount(quote.subtotal, lang),
+        code: quote.discountCodeText ?? '',
+        discount: formatAmount(quote.discountAmount, lang),
+        total: formatAmount(quote.total, lang),
+      });
+    }
+    let block = await this.common.t(lang, 'checkout.pricePlain', {
+      amount: formatAmount(quote.total, lang),
+    });
+    if (quote.discountStatus === 'rejected') {
+      const reason = await this.common.t(lang, `discount.reason.${quote.discountReason}` as never);
+      block += `\n${await this.common.t(lang, 'checkout.discountRejected', {
+        code: quote.discountCodeText ?? '',
+        reason,
+      })}`;
+    }
+    return block;
   }
 
   private async buy(ctx: BotContext, user: User, variantId: string, months: number) {
@@ -192,13 +214,19 @@ export class CatalogHandler {
     }
 
     await ctx.answerCallbackQuery({ text: '✅' });
-    if (ctx.session.discountCodeId && quote.discountAmount > 0n) {
-      ctx.session.discountCodeId = undefined;
-    }
-    const successText = await this.common.t(lang, 'checkout.success', {
-      id: result.order.number,
-      amount: formatAmount(result.order.total, lang),
-    });
+    const usedDiscount = quote.discountStatus === 'applied' && quote.discountAmount > 0n;
+    if (usedDiscount) ctx.session.discountCodeId = undefined;
+    const successText = usedDiscount
+      ? await this.common.t(lang, 'checkout.successDiscount', {
+          id: result.order.number,
+          amount: formatAmount(result.order.total, lang),
+          discount: formatAmount(quote.discountAmount, lang),
+          code: quote.discountCodeText ?? '',
+        })
+      : await this.common.t(lang, 'checkout.success', {
+          id: result.order.number,
+          amount: formatAmount(result.order.total, lang),
+        });
     await ctx.editMessageText(successText).catch(() => ctx.reply(successText));
     // Auto-delivery payload is sent separately by FulfillmentService; for
     // manual fulfillment tell the user it is on the way.
