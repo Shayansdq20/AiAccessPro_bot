@@ -12,7 +12,7 @@ export class InsufficientBalanceError extends Error {
 }
 
 export class DuplicateReferenceError extends Error {
-  constructor(public readonly existing: WalletLedger) {
+  constructor(public readonly reference: string) {
     super('Ledger reference already exists');
   }
 }
@@ -128,10 +128,10 @@ export class WalletService {
         });
         return { entry, applied: true };
       } catch (err: unknown) {
+        // The tx is aborted after a P2002; the existing row must be fetched
+        // outside this transaction (see catch below).
         if ((err as { code?: string }).code === 'P2002') {
-          throw new DuplicateReferenceError(
-            (await tx.walletLedger.findUnique({ where: { reference: params.reference } }))!,
-          );
+          throw new DuplicateReferenceError(params.reference);
         }
         throw err;
       }
@@ -142,7 +142,12 @@ export class WalletService {
       return await this.prisma.$transaction(run, { isolationLevel: 'ReadCommitted' });
     } catch (err) {
       // A concurrent tx inserted the same reference: the operation already happened.
-      if (err instanceof DuplicateReferenceError) return { entry: err.existing, applied: false };
+      if (err instanceof DuplicateReferenceError) {
+        const existing = await this.prisma.walletLedger.findUnique({
+          where: { reference: params.reference },
+        });
+        if (existing) return { entry: existing, applied: false };
+      }
       throw err;
     }
   }

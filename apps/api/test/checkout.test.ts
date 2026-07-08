@@ -109,14 +109,30 @@ describe('Checkout + fulfillment', () => {
     expect(await prisma.inventoryItem.count({ where: { status: 'delivered' } })).toBe(1);
   });
 
-  it('multiplies price by duration for duration-tab products', async () => {
+  it('prices duration-tab products with the configurable extra-month percent', async () => {
     const user = await createTestUser(prisma);
     const { product, variant } = await createCatalog(prisma, { price: 120_000n, fulfillmentMode: 'manual_admin' });
-    await prisma.product.update({ where: { id: product.id }, data: { useDurationTabs: true } });
+    // 45% => each extra month adds 45% of the base price.
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { useDurationTabs: true, durationExtraPercent: 45 },
+    });
     await wallet.credit({ userId: user.id, amount: 1_000_000n, reference: 'payment:seed' });
 
+    // 2 months: 120000 * 1.45 = 174000
+    const twoMonths = await orders.quote(user.id, variant.id, 2);
+    expect(twoMonths.total).toBe(174_000n);
+
+    // 3 months: 120000 * 1.90 = 228000
     const quote = await orders.quote(user.id, variant.id, 3);
-    expect(quote.total).toBe(360_000n);
+    expect(quote.total).toBe(228_000n);
+
+    // default 100% behaves like the classic price × months
+    await prisma.product.update({ where: { id: product.id }, data: { durationExtraPercent: 100 } });
+    const classic = await orders.quote(user.id, variant.id, 3);
+    expect(classic.total).toBe(360_000n);
+
+    await prisma.product.update({ where: { id: product.id }, data: { durationExtraPercent: 45 } });
 
     const result = await orders.checkout(user.id, quote);
     expect(result.ok).toBe(true);
@@ -124,7 +140,7 @@ describe('Checkout + fulfillment', () => {
     expect(result.fulfillment.kind).toBe('pending_manual');
     const item = await prisma.orderItem.findFirstOrThrow();
     expect((item.optionsJson as { durationMonths: number }).durationMonths).toBe(3);
-    expect(await wallet.balanceOf(user.id)).toBe(640_000n);
+    expect(await wallet.balanceOf(user.id)).toBe(1_000_000n - 228_000n);
   });
 
   it('applies discount rules: percent value, per-user limit, expiry, min order', async () => {

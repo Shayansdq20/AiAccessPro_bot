@@ -29,6 +29,7 @@ const productSchema = z.object({
   description: z.string().optional(),
   kind: z.enum(['account', 'config', 'license', 'gift_card', 'custom']).default('account'),
   useDurationTabs: z.coerce.boolean().default(false),
+  durationExtraPercent: z.coerce.number().int().min(1).max(400).default(100),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.coerce.boolean().default(true),
 });

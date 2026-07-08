@@ -11,6 +11,7 @@ interface Product {
   description?: string;
   kind: string;
   useDurationTabs: boolean;
+  durationExtraPercent: number;
   sortOrder: number;
   category: { id: string; title: string };
   _count: { variants: number };
@@ -35,6 +36,7 @@ export default async function ProductsPage() {
         description: String(formData.get('description') ?? '') || undefined,
         kind: String(formData.get('kind') ?? 'account'),
         useDurationTabs: formData.get('useDurationTabs') === 'on',
+        durationExtraPercent: Number(formData.get('durationExtraPercent') || 100),
         sortOrder: Number(formData.get('sortOrder') ?? 0),
       },
       revalidate: '/catalog/products',
@@ -51,6 +53,7 @@ export default async function ProductsPage() {
         title: String(formData.get('title') ?? ''),
         kind: String(formData.get('kind') ?? 'account'),
         useDurationTabs: formData.get('useDurationTabs') === 'on',
+        durationExtraPercent: Number(formData.get('durationExtraPercent') || 100),
         sortOrder: Number(formData.get('sortOrder') ?? 0),
       },
       revalidate: '/catalog/products',
@@ -82,6 +85,10 @@ export default async function ProductsPage() {
           </div>
           <div className="w-24"><label className="label">{t.sortOrder}</label><input className="input" name="sortOrder" type="number" defaultValue={0} /></div>
           <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="useDurationTabs" /> {t.durationTabs}</label>
+          <div className="w-40">
+            <label className="label">{t.durationExtraPercent}</label>
+            <input className="input" name="durationExtraPercent" type="number" min={1} max={400} defaultValue={100} dir="ltr" />
+          </div>
           <button className="btn" type="submit">{t.create}</button>
         </form>
       </div>
@@ -96,7 +103,7 @@ export default async function ProductsPage() {
                 <td>{p.category.title}</td>
                 <td><span className="badge badge-blue">{p.kind}</span></td>
                 <td>{p._count.variants}</td>
-                <td>{p.useDurationTabs ? '✅' : '—'}</td>
+                <td>{p.useDurationTabs ? `✅ ${p.durationExtraPercent}%` : '—'}</td>
                 <td className="w-40">
                   <details>
                     <summary className="cursor-pointer text-sm text-sky-700">{t.edit} / {t.delete}</summary>
@@ -110,6 +117,8 @@ export default async function ProductsPage() {
                       <label className="flex items-center gap-2 text-sm">
                         <input type="checkbox" name="useDurationTabs" defaultChecked={p.useDurationTabs} /> {t.durationTabs}
                       </label>
+                      <label className="label">{t.durationExtraPercent}</label>
+                      <input className="input" name="durationExtraPercent" type="number" min={1} max={400} defaultValue={p.durationExtraPercent} dir="ltr" />
                       <button className="btn w-full" type="submit">{t.save}</button>
                     </form>
                     <form action={remove.bind(null, p.id)} className="mt-2">

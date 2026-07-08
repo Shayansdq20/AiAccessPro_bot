@@ -185,8 +185,11 @@ model Product {
   title       String
   description String?
   kind        ProductKind     @default(account)
-  // VPN-style duration tabs: price = variant.price * selected months.
+  // VPN-style duration tabs. Multi-month price:
+  //   base + base * (durationExtraPercent/100) * (months - 1)
+  // 100 = classic "price × months"; e.g. 45 = each extra month adds 45% of base.
   useDurationTabs Boolean     @default(false)
+  durationExtraPercent Int    @default(100)
   sortOrder   Int             @default(0)
   isActive    Boolean         @default(true)
   createdAt   DateTime        @default(now())

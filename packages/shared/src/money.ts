@@ -34,6 +34,17 @@ export function parseAmount(input: string): bigint | null {
   }
 }
 
+/**
+ * Multi-month price for duration-tab products:
+ * base + base * (extraPercentPerMonth/100) * (months - 1).
+ * 100 => classic base × months; 45 => each extra month adds 45% of base.
+ */
+export function durationPrice(base: bigint, months: number, extraPercentPerMonth = 100): bigint {
+  const m = BigInt(Math.max(1, Math.trunc(months)));
+  const extra = BigInt(Math.max(0, Math.trunc(extraPercentPerMonth)));
+  return (base * (100n + extra * (m - 1n))) / 100n;
+}
+
 export function renderTemplate(template: string, vars: Record<string, string | number | bigint>): string {
   return template.replace(/\{(\w+)\}/g, (match, key) =>
     key in vars ? String(vars[key]) : match,

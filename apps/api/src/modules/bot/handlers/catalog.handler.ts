@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Bot, InlineKeyboard } from 'grammy';
 import type { User } from '@premium-hub/db';
-import { formatAmount, toFaDigits } from '@premium-hub/shared';
+import { durationPrice, formatAmount, toFaDigits } from '@premium-hub/shared';
 import { CatalogService } from '../../catalog/catalog.service';
 import { OrdersService } from '../../orders/orders.service';
 import { WalletService } from '../../wallet/wallet.service';
@@ -123,10 +123,13 @@ export class CatalogHandler {
       }
     }
 
-    const multiplier = product.useDurationTabs ? BigInt(months) : 1n;
+    const effectiveMonths = product.useDurationTabs ? months : 1;
     for (const variant of visible) {
-      const price = formatAmount(variant.price * multiplier, lang);
-      keyboard.text(`${variant.title} — ${price}`, `plan:${variant.id}:${Number(multiplier)}`).row();
+      const price = formatAmount(
+        durationPrice(variant.price, effectiveMonths, product.durationExtraPercent),
+        lang,
+      );
+      keyboard.text(`${variant.title} — ${price}`, `plan:${variant.id}:${effectiveMonths}`).row();
     }
     keyboard.text(await this.common.t(lang, 'common.back'), `cat:${product.categoryId}`);
     await ctx.editMessageText(header, { reply_markup: keyboard }).catch(() => ctx.reply(header, { reply_markup: keyboard }));

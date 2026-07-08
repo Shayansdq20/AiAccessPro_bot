@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { durationPrice } from '@premium-hub/shared';
 import type { DiscountCode, Order, OrderItem } from '@premium-hub/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService, InsufficientBalanceError } from '../wallet/wallet.service';
@@ -36,11 +37,11 @@ export class OrdersService {
     private readonly audit: AuditService,
   ) {}
 
-  /** Price a variant for a user, applying duration multiplier and saved discount. */
+  /** Price a variant for a user, applying duration pricing and saved discount. */
   async quote(userId: string, variantId: string, durationMonths = 1, discountCodeId?: string): Promise<Quote> {
     const variant = await this.catalog.variantForPurchase(variantId);
-    const months = variant.product.useDurationTabs ? BigInt(Math.max(1, durationMonths)) : 1n;
-    const subtotal = variant.price * months;
+    const months = variant.product.useDurationTabs ? Math.max(1, durationMonths) : 1;
+    const subtotal = durationPrice(variant.price, months, variant.product.durationExtraPercent);
 
     let discountAmount = 0n;
     let discountCode: DiscountCode | undefined;
@@ -55,7 +56,7 @@ export class OrdersService {
       variantId,
       productTitle: variant.product.title,
       variantTitle: variant.title,
-      durationMonths: Number(months),
+      durationMonths: months,
       subtotal,
       discountAmount,
       total: subtotal - discountAmount,
