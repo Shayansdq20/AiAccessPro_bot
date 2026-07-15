@@ -29,6 +29,7 @@ export class UsersController {
             { firstName: { contains: q, mode: 'insensitive' as const } },
             { lastName: { contains: q, mode: 'insensitive' as const } },
             { displayUsername: { contains: q, mode: 'insensitive' as const } },
+            { phone: { contains: q } },
             ...(/^\d+$/.test(q) ? [{ telegramId: BigInt(q) }] : []),
           ],
         }

@@ -100,6 +100,40 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)
 
+  apps/storefront:
+    dependencies:
+      '@premium-hub/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      next:
+        specifier: ^15.3.0
+        version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.0.0
+        version: 4.3.2
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      tailwindcss:
+        specifier: ^4.0.0
+        version: 4.3.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/db:
     dependencies:
       '@prisma/client':

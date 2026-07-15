@@ -1,5 +1,7 @@
-import { Controller, Get, Header, Query } from '@nestjs/common';
+import { Controller, Get, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { PaymentsService } from './payments.service';
+import { config } from '../../config';
 
 function resultPage(success: boolean, detail: string): string {
   const color = success ? '#16a34a' : '#dc2626';
@@ -22,13 +24,30 @@ export class PaymentsController {
   }
 
   @Get('payments/zarinpal/callback')
-  @Header('content-type', 'text/html; charset=utf-8')
-  async zarinpalCallback(@Query('Authority') authority = '', @Query('Status') status = '') {
-    if (!authority) return resultPage(false, 'پارامترهای پرداخت نامعتبر است.');
+  async zarinpalCallback(
+    @Res() res: Response,
+    @Query('Authority') authority = '',
+    @Query('Status') status = '',
+  ) {
+    const html = (ok: boolean, detail: string) => {
+      res.setHeader('content-type', 'text/html; charset=utf-8');
+      res.send(resultPage(ok, detail));
+    };
+
+    if (!authority) return html(false, 'پارامترهای پرداخت نامعتبر است.');
     const result = await this.payments.handleZarinpalCallback(authority, status);
-    if (result.ok) {
-      return resultPage(true, 'کیف پول شما با موفقیت شارژ شد. جزئیات در تلگرام برای شما ارسال شده است.');
+
+    // Web-initiated top-ups return to the storefront; bot top-ups see the page.
+    if (result.payment?.channel === 'web') {
+      const amount = result.payment.amount.toString();
+      return res.redirect(
+        `${config.storefrontWebUrl}/wallet/result?status=${result.ok ? 'ok' : 'fail'}&amount=${amount}`,
+      );
     }
-    return resultPage(false, 'پرداخت تایید نشد. اگر مبلغی کسر شده باشد طی ۷۲ ساعت باز می‌گردد.');
+
+    if (result.ok) {
+      return html(true, 'کیف پول شما با موفقیت شارژ شد. جزئیات در تلگرام برای شما ارسال شده است.');
+    }
+    return html(false, 'پرداخت تایید نشد. اگر مبلغی کسر شده باشد طی ۷۲ ساعت باز می‌گردد.');
   }
 }

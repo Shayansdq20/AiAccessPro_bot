@@ -40,7 +40,26 @@ export const config = {
 
   publicApiUrl: optional('PUBLIC_API_URL', 'http://localhost:3001'),
   adminWebUrl: optional('ADMIN_WEB_URL', 'http://localhost:3000'),
+  storefrontWebUrl: optional('STOREFRONT_WEB_URL', 'http://localhost:3002'),
   currency: optional('CURRENCY', 'IRT'),
+
+  // Storefront phone-OTP login. `driver=log` prints the code to logs (dev);
+  // set driver=kavenegar + credentials for real SMS. No code change needed.
+  sms: {
+    driver: optional('SMS_DRIVER', 'log') as 'log' | 'kavenegar',
+    kavenegar: {
+      apiKey: optional('KAVENEGAR_API_KEY'),
+      sender: optional('KAVENEGAR_SENDER'),
+      // Optional Kavenegar OTP template (lookup API); falls back to plain SMS.
+      template: optional('KAVENEGAR_OTP_TEMPLATE'),
+    },
+    otp: {
+      length: Number(optional('OTP_LENGTH', '5')),
+      ttlSeconds: Number(optional('OTP_TTL_SECONDS', '120')),
+      maxAttempts: Number(optional('OTP_MAX_ATTEMPTS', '5')),
+      resendCooldownSeconds: Number(optional('OTP_RESEND_COOLDOWN_SECONDS', '60')),
+    },
+  },
 
   zarinpal: {
     merchantId: optional('ZARINPAL_MERCHANT_ID'),

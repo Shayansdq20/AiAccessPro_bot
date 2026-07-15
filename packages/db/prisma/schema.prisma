@@ -113,8 +113,11 @@ enum SenderType {
 
 model User {
   id               String     @id @default(cuid())
-  telegramId       BigInt     @unique
+  // Nullable: web customers sign up by phone and may have no Telegram identity.
+  telegramId       BigInt?    @unique
   telegramUsername String?
+  // Web (storefront) identity: normalized Iranian mobile, e.g. 09123456789.
+  phone            String?    @unique
   firstName        String?
   lastName         String?
   displayUsername  String     @unique
@@ -134,9 +137,37 @@ model User {
   redemptions     DiscountRedemption[]
   referrals       User[]           @relation("UserReferrals")
   referralRewards ReferralReward[]
+  sessions        CustomerSession[]
 
   @@index([telegramUsername])
   @@index([referredById])
+}
+
+// One-time SMS codes for storefront (web) phone login. Codes are stored hashed;
+// verification is bounded by expiry + attempt count.
+model PhoneOtp {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone])
+}
+
+// Storefront customer sessions (mirrors AdminSession). Bearer token, sha256-hashed.
+model CustomerSession {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Wallet {
@@ -315,6 +346,8 @@ model Payment {
   type             PaymentType
   // Provider registry key: "manual", "zarinpal", later crypto providers.
   provider         String
+  // Where the payment was initiated: "bot" (Telegram) or "web" (storefront).
+  channel          String        @default("bot")
   amount           BigInt
   status           PaymentStatus @default(pending)
   providerRef      String?
@@ -334,9 +367,13 @@ model ManualReceipt {
   id                String   @id @default(cuid())
   paymentId         String   @unique
   payment           Payment  @relation(fields: [paymentId], references: [id])
-  telegramFileId    String
-  userChatId        BigInt
+  // Telegram-uploaded receipt (bot flow). Null for web uploads.
+  telegramFileId    String?
+  userChatId        BigInt?
   telegramMessageId Int?
+  // Web-uploaded receipt image (storefront flow). Null for Telegram uploads.
+  image             Bytes?
+  imageMime         String?
   note              String?
   createdAt         DateTime @default(now())
 }

@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 interface Dashboard {
   counts: {
     users: number;
+    webCustomers: number;
     orders: number;
     delivered: number;
     pendingPayments: number;
@@ -15,6 +16,7 @@ interface Dashboard {
     openTickets: number;
   };
   revenue: string;
+  webTopups: string;
   recentOrders: {
     id: string;
     number: number;
@@ -30,6 +32,7 @@ interface Dashboard {
     status: string;
     amount: string;
     provider: string;
+    channel: string;
     createdAt: string;
     user: { id: string; firstName?: string; lastName?: string; telegramUsername?: string; displayUsername: string };
   }[];
@@ -41,6 +44,7 @@ export default async function DashboardPage() {
 
   const stats = [
     { label: t.totalUsers, value: data.counts.users, href: '/users' },
+    { label: t.webCustomers, value: data.counts.webCustomers, href: '/users' },
     { label: t.totalOrders, value: data.counts.orders, href: '/orders' },
     { label: t.deliveredServices, value: data.counts.delivered, href: '/orders?status=delivered' },
     { label: t.pendingPayments, value: data.counts.pendingPayments, href: '/operations', hot: data.counts.pendingPayments > 0 },
@@ -53,8 +57,14 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t.dashboard}</h1>
         <div className="card !p-3 text-sm">
-          <span className="text-slate-500">{t.revenue}: </span>
-          <b>{money(data.revenue, lang)}</b>
+          <div>
+            <span className="text-slate-500">{t.revenue}: </span>
+            <b>{money(data.revenue, lang)}</b>
+          </div>
+          <div className="mt-0.5">
+            <span className="text-slate-500">{t.webTopups}: </span>
+            <b>{money(data.webTopups, lang)}</b>
+          </div>
         </div>
       </div>
 
@@ -92,7 +102,7 @@ export default async function DashboardPage() {
           <h2 className="mb-3 font-semibold">{t.recentPayments}</h2>
           <table className="table-base">
             <thead>
-              <tr><th>#</th><th>{t.user}</th><th>{t.amount}</th><th>{t.status}</th><th>{t.date}</th></tr>
+              <tr><th>#</th><th>{t.user}</th><th>{t.amount}</th><th>{t.channel}</th><th>{t.status}</th><th>{t.date}</th></tr>
             </thead>
             <tbody>
               {data.recentPayments.map((p) => (
@@ -101,6 +111,11 @@ export default async function DashboardPage() {
                   <td><Link className="text-sky-700 hover:underline" href={`/users/${p.user.id}`}>{displayName(p.user)}</Link></td>
                   <td>{money(p.amount, lang)}</td>
                   <td>
+                    <span className={`badge ${p.channel === 'web' ? 'badge-green' : 'badge-gray'}`}>
+                      {p.channel === 'web' ? t.channelWeb : t.channelBot}
+                    </span>
+                  </td>
+                  <td>
                     <span className={`badge ${p.status === 'approved' ? 'badge-green' : p.status === 'pending' ? 'badge-yellow' : 'badge-red'}`}>
                       {p.status}
                     </span>
@@ -108,7 +123,7 @@ export default async function DashboardPage() {
                   <td className="text-xs text-slate-500">{dateTime(p.createdAt, lang)}</td>
                 </tr>
               ))}
-              {data.recentPayments.length === 0 && <tr><td colSpan={5} className="text-slate-400">{t.noData}</td></tr>}
+              {data.recentPayments.length === 0 && <tr><td colSpan={6} className="text-slate-400">{t.noData}</td></tr>}
             </tbody>
           </table>
         </div>

@@ -68,6 +68,32 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { telegramId } });
   }
 
+  /** Find (or create + wallet) a storefront customer by normalized phone. */
+  async upsertFromPhone(phone: string): Promise<User> {
+    const existing = await this.prisma.user.findUnique({ where: { phone } });
+    if (existing) return existing;
+    // Retry on the (unlikely) displayUsername collision.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        return await this.prisma.user.create({
+          data: {
+            phone,
+            displayUsername: generateDisplayUsername(),
+            referralCode: generateReferralCode(),
+            wallet: { create: {} },
+          },
+        });
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        if (code !== 'P2002') throw err;
+        // If the phone itself collided (concurrent login), return it.
+        const raced = await this.prisma.user.findUnique({ where: { phone } });
+        if (raced) return raced;
+      }
+    }
+    throw new Error('Could not create user');
+  }
+
   async setLanguage(userId: string, language: Language): Promise<void> {
     await this.prisma.user.update({ where: { id: userId }, data: { language } });
   }

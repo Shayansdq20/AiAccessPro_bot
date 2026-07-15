@@ -30,9 +30,72 @@ export class PaymentsService {
   }
 
   /** Create a pending manual (card-to-card) wallet top-up. */
-  async createManualTopup(userId: string, amount: bigint): Promise<Payment> {
+  async createManualTopup(userId: string, amount: bigint, channel = 'bot'): Promise<Payment> {
     return this.prisma.payment.create({
-      data: { userId, type: 'manual', provider: 'manual', amount, status: 'pending' },
+      data: { userId, type: 'manual', provider: 'manual', channel, amount, status: 'pending' },
+    });
+  }
+
+  /** Attach a web-uploaded receipt image, then alert admins (image + approve/reject). */
+  async attachWebReceipt(params: {
+    userId: string;
+    paymentId: string;
+    image: Buffer;
+    imageMime: string;
+    note?: string;
+  }): Promise<Payment & { user: User }> {
+    const existing = await this.prisma.payment.findUnique({
+      where: { id: params.paymentId },
+      include: { receipt: true },
+    });
+    if (!existing || existing.userId !== params.userId) throw new NotFoundException('Payment not found');
+    if (existing.type !== 'manual' || existing.status !== 'pending' || existing.receipt) {
+      throw new NotFoundException('Payment is not awaiting a receipt');
+    }
+
+    await this.prisma.manualReceipt.create({
+      data: {
+        paymentId: params.paymentId,
+        // Normalize Buffer → ArrayBuffer-backed Uint8Array for Prisma's Bytes type.
+        image: Uint8Array.from(params.image),
+        imageMime: params.imageMime,
+        note: params.note,
+      },
+    });
+    const payment = await this.prisma.payment.findUniqueOrThrow({
+      where: { id: params.paymentId },
+      include: { user: true },
+    });
+
+    const caption = await this.texts.text('fa', 'admin.receiptCaption', {
+      id: payment.number,
+      name: payment.user.firstName ?? payment.user.displayUsername,
+      telegramId: payment.user.phone ?? payment.user.telegramId ?? '—',
+      amount: formatAmount(payment.amount, 'fa'),
+      status: await this.texts.text('fa', 'status.payment.pending'),
+    });
+    const keyboard = new InlineKeyboard()
+      .text(await this.texts.text('fa', 'admin.approve'), `padm:approve:${payment.id}`)
+      .text(await this.texts.text('fa', 'admin.reject'), `padm:reject:${payment.id}`);
+    await this.notifier.sendPhotoBufferToAdmins(params.image, caption, keyboard);
+    return payment;
+  }
+
+  /** A customer's recent payments (for the storefront wallet view). */
+  async paymentsOf(userId: string, take = 20) {
+    return this.prisma.payment.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        number: true,
+        amount: true,
+        status: true,
+        type: true,
+        provider: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
     });
   }
 
@@ -60,7 +123,7 @@ export class PaymentsService {
     const caption = await this.texts.text('fa', 'admin.receiptCaption', {
       id: payment.number,
       name: payment.user.firstName ?? payment.user.displayUsername,
-      telegramId: payment.user.telegramId,
+      telegramId: payment.user.telegramId ?? '—',
       amount: formatAmount(payment.amount, 'fa'),
       status: await this.texts.text('fa', 'status.payment.pending'),
     });
@@ -171,10 +234,14 @@ export class PaymentsService {
   // ---------------------------------------------------------------------
 
   /** Create a gateway top-up and return the redirect URL for the user. */
-  async createGatewayTopup(userId: string, amount: bigint): Promise<{ payment: Payment; payUrl: string } | null> {
+  async createGatewayTopup(
+    userId: string,
+    amount: bigint,
+    channel = 'bot',
+  ): Promise<{ payment: Payment; payUrl: string } | null> {
     if (!this.zarinpal.enabled) return null;
     const payment = await this.prisma.payment.create({
-      data: { userId, type: 'gateway', provider: 'zarinpal', amount, status: 'pending' },
+      data: { userId, type: 'gateway', provider: 'zarinpal', channel, amount, status: 'pending' },
     });
     const requested = await this.zarinpal.request({
       amountToman: amount,

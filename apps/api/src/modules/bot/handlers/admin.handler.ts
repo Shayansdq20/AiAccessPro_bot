@@ -90,19 +90,22 @@ export class AdminHandler {
       const caption = await this.common.t('fa', 'admin.receiptCaption', {
         id: payment.number,
         name: payment.user.firstName ?? payment.user.displayUsername,
-        telegramId: payment.user.telegramId,
+        telegramId: payment.user.telegramId ?? '—',
         amount: formatAmount(payment.amount, 'fa'),
         status: await this.common.t('fa', 'status.payment.pending'),
       });
       const keyboard = new InlineKeyboard()
         .text(await this.common.t('fa', 'admin.approve'), `padm:approve:${payment.id}`)
         .text(await this.common.t('fa', 'admin.reject'), `padm:reject:${payment.id}`);
-      try {
-        await ctx.replyWithPhoto(payment.receipt!.telegramFileId, {
-          caption,
-          reply_markup: keyboard,
-        });
-      } catch {
+      const fileId = payment.receipt?.telegramFileId;
+      if (fileId) {
+        try {
+          await ctx.replyWithPhoto(fileId, { caption, reply_markup: keyboard });
+        } catch {
+          await ctx.reply(caption, { reply_markup: keyboard });
+        }
+      } else {
+        // Web-uploaded receipt: no Telegram photo; the image is in the admin panel.
         await ctx.reply(caption, { reply_markup: keyboard });
       }
     }
@@ -120,7 +123,7 @@ export class AdminHandler {
         await this.common.t('fa', 'admin.deliveryItem', {
           orderId: delivery.order.number,
           name: delivery.order.user.firstName ?? delivery.order.user.displayUsername,
-          telegramId: delivery.order.user.telegramId,
+          telegramId: delivery.order.user.telegramId ?? '—',
           product: item?.productTitle ?? '—',
           plan: item?.variantTitle ?? '—',
         }),

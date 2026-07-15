@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 
 interface UserRow {
   id: string;
-  telegramId: string;
+  telegramId?: string | null;
+  phone?: string | null;
   telegramUsername?: string;
   firstName?: string;
   lastName?: string;
@@ -30,14 +31,14 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">{t.users} ({data.total})</h1>
       <form className="flex max-w-md gap-2">
-        <input className="input" name="q" defaultValue={q} placeholder={`${t.search}: ${t.telegramId} / ${t.username} / ${t.name}`} />
+        <input className="input" name="q" defaultValue={q} placeholder={`${t.search}: ${t.phone} / ${t.telegramId} / ${t.username} / ${t.name}`} />
         <button className="btn" type="submit">{t.search}</button>
       </form>
       <div className="card overflow-x-auto !p-0">
         <table className="table-base">
           <thead>
             <tr>
-              <th>{t.user}</th><th>{t.telegramId}</th><th>{t.username}</th><th>{t.balance}</th>
+              <th>{t.user}</th><th>{t.phone}</th><th>{t.channel}</th><th>{t.username}</th><th>{t.balance}</th>
               <th>{t.ordersCount}</th><th>{t.paymentsCount}</th><th>{t.ticketsCount}</th><th>{t.status}</th>
             </tr>
           </thead>
@@ -45,7 +46,12 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
             {data.items.map((u) => (
               <tr key={u.id} className="hover:bg-slate-50">
                 <td><Link className="font-medium text-sky-700 hover:underline" href={`/users/${u.id}`}>{displayName(u)}</Link></td>
-                <td dir="ltr">{u.telegramId}</td>
+                <td dir="ltr">{u.phone ?? '—'}</td>
+                <td>
+                  <span className={`badge ${u.phone ? 'badge-green' : 'badge-gray'}`}>
+                    {u.phone ? t.channelWeb : t.channelBot}
+                  </span>
+                </td>
                 <td dir="ltr">{u.telegramUsername ? `@${u.telegramUsername}` : u.displayUsername}</td>
                 <td>{money(u.wallet?.balance ?? '0', lang)}</td>
                 <td>{u._count.orders}</td>
@@ -54,7 +60,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 <td><span className={`badge ${u.status === 'active' ? 'badge-green' : 'badge-red'}`}>{u.status}</span></td>
               </tr>
             ))}
-            {data.items.length === 0 && <tr><td colSpan={8} className="text-slate-400">{t.noData}</td></tr>}
+            {data.items.length === 0 && <tr><td colSpan={9} className="text-slate-400">{t.noData}</td></tr>}
           </tbody>
         </table>
       </div>

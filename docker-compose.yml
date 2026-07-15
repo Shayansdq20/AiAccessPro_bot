@@ -54,6 +54,21 @@ services:
       # Localhost only — Nginx terminates TLS and proxies to this port.
       - "127.0.0.1:3000:3000"
 
+  storefront:
+    build:
+      context: .
+      dockerfile: docker/storefront.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file: .env
+    environment:
+      API_INTERNAL_URL: http://api:3001
+      NODE_ENV: production
+    ports:
+      # Localhost only — Nginx terminates TLS and proxies to this port.
+      - "127.0.0.1:3002:3002"
+
   # Daily logical backups kept for 14 days (pg_dump into ./backups).
   backup:
     image: postgres:16-alpine

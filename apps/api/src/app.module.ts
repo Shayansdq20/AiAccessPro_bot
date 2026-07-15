@@ -26,6 +26,16 @@ import { AdminAuthService } from './modules/admin-auth/admin-auth.service';
 import { AdminAuthGuard } from './modules/admin-auth/admin-auth.guard';
 import { AdminAuthController } from './modules/admin-auth/admin-auth.controller';
 
+// Customer (storefront) auth + SMS
+import { SmsService } from './modules/sms/sms.service';
+import { CustomerAuthService } from './modules/customer-auth/customer-auth.service';
+import { CustomerAuthGuard } from './modules/customer-auth/customer-auth.guard';
+import { CustomerAuthController } from './modules/customer-auth/customer-auth.controller';
+import { StorefrontAccountController } from './modules/storefront-api/account.controller';
+import { ShopController } from './modules/storefront-api/shop.controller';
+import { TopupController } from './modules/storefront-api/topup.controller';
+import { AccountDataController } from './modules/storefront-api/account-data.controller';
+
 // Bot
 import { BotCommonService } from './modules/bot/bot-common.service';
 import { CatalogHandler } from './modules/bot/handlers/catalog.handler';
@@ -54,6 +64,11 @@ import { ReferralAdminController } from './modules/referral/referral-admin.contr
 @Module({
   controllers: [
     AdminAuthController,
+    CustomerAuthController,
+    StorefrontAccountController,
+    ShopController,
+    TopupController,
+    AccountDataController,
     BotController,
     PaymentsController,
     DashboardController,
@@ -90,6 +105,9 @@ import { ReferralAdminController } from './modules/referral/referral-admin.contr
     ReferralService,
     AdminAuthService,
     AdminAuthGuard,
+    SmsService,
+    CustomerAuthService,
+    CustomerAuthGuard,
     BotCommonService,
     CatalogHandler,
     WalletHandler,

@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
-  app.enableCors({ origin: [config.adminWebUrl], credentials: false });
+  app.enableCors({ origin: [config.adminWebUrl, config.storefrontWebUrl], credentials: false });
   app.enableShutdownHooks();
   await app.listen(config.apiPort);
   new Logger('Bootstrap').log(

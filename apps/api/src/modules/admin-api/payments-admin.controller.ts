@@ -62,13 +62,24 @@ export class PaymentsAdminController {
   }
 
   /**
-   * Streams the Telegram receipt photo so the panel can show the image —
-   * approving from text-only metadata is not acceptable.
+   * Streams the receipt image so the panel can show it — approving from
+   * text-only metadata is not acceptable. Serves web uploads directly and
+   * Telegram-uploaded photos by proxying the Bot API.
    */
   @Get(':id/receipt.jpg')
   async receiptPhoto(@Param('id') id: string, @Res() res: Response) {
     const receipt = await this.prisma.manualReceipt.findUnique({ where: { paymentId: id } });
     if (!receipt) throw new NotFoundException('No receipt');
+
+    // Web-uploaded receipt: bytes are stored directly.
+    if (receipt.image) {
+      res.setHeader('content-type', receipt.imageMime ?? 'image/jpeg');
+      res.setHeader('cache-control', 'private, max-age=3600');
+      res.end(Buffer.from(receipt.image));
+      return;
+    }
+
+    if (!receipt.telegramFileId) throw new NotFoundException('No receipt image');
     const file = await this.notifier.api.getFile(receipt.telegramFileId);
     if (!file.file_path) throw new NotFoundException('File unavailable');
     const url = `https://api.telegram.org/file/bot${config.telegram.botToken}/${file.file_path}`;

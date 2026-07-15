@@ -13,6 +13,15 @@ export class SupportService {
     private readonly audit: AuditService,
   ) {}
 
+  /** A user's tickets with their messages (newest ticket first). */
+  async ticketsOf(userId: string) {
+    return this.prisma.supportTicket.findMany({
+      where: { userId },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   /** Append a user message to their open ticket (creating one if needed). */
   async addUserMessage(userId: string, body: string) {
     let ticket = await this.prisma.supportTicket.findFirst({

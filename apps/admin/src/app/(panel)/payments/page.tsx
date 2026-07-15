@@ -11,6 +11,7 @@ interface PaymentRow {
   status: string;
   amount: string;
   provider: string;
+  channel: string;
   type: string;
   createdAt: string;
   decidedAt?: string;
@@ -41,7 +42,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
       <div className="card overflow-x-auto !p-0">
         <table className="table-base">
           <thead>
-            <tr><th>#</th><th>{t.user}</th><th>{t.amount}</th><th>{t.provider}</th><th>{t.receipt}</th><th>{t.status}</th><th>{t.date}</th></tr>
+            <tr><th>#</th><th>{t.user}</th><th>{t.amount}</th><th>{t.provider}</th><th>{t.channel}</th><th>{t.receipt}</th><th>{t.status}</th><th>{t.date}</th></tr>
           </thead>
           <tbody>
             {data.items.map((p) => (
@@ -50,6 +51,11 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
                 <td><Link className="text-sky-700 hover:underline" href={`/users/${p.user.id}`}>{displayName(p.user)}</Link></td>
                 <td>{money(p.amount, lang)}</td>
                 <td>{p.provider}</td>
+                <td>
+                  <span className={`badge ${p.channel === 'web' ? 'badge-green' : 'badge-gray'}`}>
+                    {p.channel === 'web' ? t.channelWeb : t.channelBot}
+                  </span>
+                </td>
                 <td>
                   {p.receipt ? (
                     <a className="text-sky-700 hover:underline" href={`/api/receipt/${p.id}`} target="_blank" rel="noreferrer">🖼 {t.receipt}</a>
@@ -61,7 +67,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
                 <td className="text-xs text-slate-500">{dateTime(p.createdAt, lang)}</td>
               </tr>
             ))}
-            {data.items.length === 0 && <tr><td colSpan={7} className="text-slate-400">{t.noData}</td></tr>}
+            {data.items.length === 0 && <tr><td colSpan={8} className="text-slate-400">{t.noData}</td></tr>}
           </tbody>
         </table>
       </div>

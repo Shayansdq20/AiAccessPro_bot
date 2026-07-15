@@ -257,7 +257,7 @@ export class MiscHandler {
     await ctx.reply(
       await this.common.t(lang, 'profile.info', {
         name: fullName,
-        telegramId: user.telegramId,
+        telegramId: user.telegramId ?? '—',
         username: user.telegramUsername ? `@${user.telegramUsername}` : '—',
         displayUsername: user.displayUsername,
         language: lang === 'fa' ? 'فارسی' : 'English',

@@ -31,11 +31,13 @@ export class NotifierService {
   }
 
   async sendMessage(
-    chatId: string | number | bigint,
+    chatId: string | number | bigint | null | undefined,
     text: string,
     keyboard?: InlineKeyboard,
     parseMode?: 'HTML',
   ): Promise<boolean> {
+    // Web-only customers have no Telegram id — nothing to notify, not an error.
+    if (chatId === null || chatId === undefined || chatId === '') return false;
     try {
       await this.api.sendMessage(String(chatId), text, {
         reply_markup: keyboard,
@@ -52,11 +54,12 @@ export class NotifierService {
 
   /** Send a generated image (e.g. QR code) with optional caption. */
   async sendPhotoBuffer(
-    chatId: string | number | bigint,
+    chatId: string | number | bigint | null | undefined,
     image: Buffer,
     caption?: string,
     parseMode?: 'HTML',
   ): Promise<boolean> {
+    if (chatId === null || chatId === undefined || chatId === '') return false;
     try {
       await this.api.sendPhoto(String(chatId), new InputFile(image, 'qr.png'), {
         caption,
@@ -71,6 +74,24 @@ export class NotifierService {
 
   async notifyAdmins(text: string, keyboard?: InlineKeyboard): Promise<void> {
     await Promise.all(this.adminChatIds.map((id) => this.sendMessage(id, text, keyboard)));
+  }
+
+  /** Send an in-memory image (e.g. a web-uploaded receipt) to all admins. */
+  async sendPhotoBufferToAdmins(image: Buffer, caption: string, keyboard?: InlineKeyboard): Promise<void> {
+    await Promise.all(
+      this.adminChatIds.map(async (chatId) => {
+        try {
+          await this.api.sendPhoto(chatId, new InputFile(image, 'receipt.jpg'), {
+            caption,
+            reply_markup: keyboard,
+          });
+        } catch (err) {
+          this.logger.warn(`sendPhotoBuffer to admin ${chatId} failed: ${(err as Error).message}`);
+          // Fallback: plain message so the admin still gets actionable controls.
+          await this.sendMessage(chatId, caption, keyboard);
+        }
+      }),
+    );
   }
 
   /** Send a photo (by Telegram file id) with caption + keyboard to all admins. */

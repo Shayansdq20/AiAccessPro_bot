@@ -149,6 +149,12 @@ const en = {
   deliveredServices: 'Delivered',
   totalUsers: 'Users',
   totalOrders: 'Orders',
+  webCustomers: 'Web customers',
+  webTopups: 'Web top-ups',
+  channel: 'Channel',
+  channelWeb: 'Web',
+  channelBot: 'Bot',
+  phone: 'Phone',
 };
 
 const fa: typeof en = {
@@ -296,6 +302,12 @@ const fa: typeof en = {
   deliveredServices: 'تحویل‌شده',
   totalUsers: 'کاربران',
   totalOrders: 'سفارش‌ها',
+  webCustomers: 'مشتریان وب',
+  webTopups: 'شارژ از سایت',
+  channel: 'کانال',
+  channelWeb: 'سایت',
+  channelBot: 'ربات',
+  phone: 'موبایل',
 };
 
 export type Dict = typeof en;

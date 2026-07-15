@@ -224,7 +224,7 @@ export class FulfillmentService {
       const caption = await this.texts.text('fa', 'admin.deliveryItem', {
         orderId: order.number,
         name: order.user.firstName ?? order.user.displayUsername,
-        telegramId: order.user.telegramId,
+        telegramId: order.user.telegramId ?? '—',
         product: item.productTitle,
         plan: item.variantTitle,
       });
