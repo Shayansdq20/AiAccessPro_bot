@@ -1,4 +1,4 @@
-# راهنمای کار روزانه با فروشگاه Premium Hub
+# راهنمای کار روزانه با فروشگاه Pro Ai Access
 
 این راهنما برای مدیر فروشگاه است: کارهای روزمره از پنل ادمین و تلگرام. راهنمای فنی در `AI_HANDOFF_GUIDE.md` و `CLAUDE.md` است.
 
@@ -53,6 +53,7 @@ XUI_PUBLIC_HOST=آدرس-سرور-کانفیگ‌ها   # اختیاری، پی�
 
 ```sh
 # آپدیت بعد از تغییر کد
+# پوشه‌ی سرور فعلی هنوز ~/premium-hub است — اسمش را عوض نکن (دیتابیس خالی بالا می‌آید)
 cd ~/premium-hub && git pull
 COMPOSE_PARALLEL_LIMIT=1 sudo docker compose up -d --build api admin
 

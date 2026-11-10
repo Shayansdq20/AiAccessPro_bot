@@ -16,7 +16,7 @@ export class SmsService {
 
   /** Send an OTP code. Uses Kavenegar's OTP lookup when configured, else plain SMS. */
   async sendOtp(phone: string, code: string): Promise<boolean> {
-    const text = `کد ورود شما به پریمیوم هاب: ${code}`;
+    const text = `کد ورود شما به Pro Ai Access: ${code}`;
     if (config.sms.driver === 'kavenegar') {
       return this.sendViaKavenegar(phone, code, text);
     }

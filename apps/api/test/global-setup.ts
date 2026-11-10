@@ -1,15 +1,15 @@
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-const ADMIN_URL = 'postgresql://premium_hub:premium_hub@localhost:5433/premium_hub?schema=public';
-const TEST_URL = 'postgresql://premium_hub:premium_hub@localhost:5433/premium_hub_test?schema=public';
+const ADMIN_URL = 'postgresql://pro_ai_access:pro_ai_access@localhost:5433/pro_ai_access?schema=public';
+const TEST_URL = 'postgresql://pro_ai_access:pro_ai_access@localhost:5433/pro_ai_access_test?schema=public';
 
 /** Create the test database (if needed) and apply migrations. */
 export default async function setup() {
-  const { PrismaClient } = await import('@premium-hub/db');
+  const { PrismaClient } = await import('@pro-ai-access/db');
   const admin = new PrismaClient({ datasources: { db: { url: ADMIN_URL } } });
   try {
-    await admin.$executeRawUnsafe('CREATE DATABASE premium_hub_test');
+    await admin.$executeRawUnsafe('CREATE DATABASE pro_ai_access_test');
   } catch {
     // already exists
   } finally {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { durationPrice } from '@premium-hub/shared';
-import type { DiscountCode, Order, OrderItem } from '@premium-hub/db';
+import { durationPrice } from '@pro-ai-access/shared';
+import type { DiscountCode, Order, OrderItem } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService, InsufficientBalanceError } from '../wallet/wallet.service';
 import { CatalogService } from '../catalog/catalog.service';

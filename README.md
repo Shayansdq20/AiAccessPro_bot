@@ -1,4 +1,4 @@
-# Premium Hub
+# Pro Ai Access
 
 Telegram-first storefront for digital services (premium accounts, VPN configs, licenses, gift cards) with a wallet-based purchase flow, hybrid fulfillment, and a bilingual (فارسی/English) web admin panel.
 
@@ -31,7 +31,7 @@ cp .env.example .env            # fill in TELEGRAM_BOT_TOKEN etc.
 pnpm install
 docker compose up -d postgres   # localhost:5433
 pnpm db:migrate                 # prisma migrate dev
-pnpm --filter @premium-hub/db build && pnpm db:seed   # demo catalog (optional)
+pnpm --filter @pro-ai-access/db build && pnpm db:seed   # demo catalog (optional)
 pnpm dev:api                    # bot in polling mode + API on :3001
 pnpm dev:admin                  # admin panel on :3000
 ```
@@ -45,13 +45,13 @@ Money-critical paths (ledger idempotency, double-approval, overdraw, inventory d
 
 ```sh
 docker compose up -d postgres
-pnpm --filter @premium-hub/api test
+pnpm --filter @pro-ai-access/api test
 ```
 
 ## Production deployment (VPS + Docker Compose)
 
 ```sh
-git clone <this-repo> premium-hub && cd premium-hub
+git clone <this-repo> pro-ai-access && cd pro-ai-access
 cp .env.example .env
 nano .env       # real secrets! use: openssl rand -hex 32
 COMPOSE_PARALLEL_LIMIT=1 docker compose up -d --build

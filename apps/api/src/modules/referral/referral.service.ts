@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import type { ReferralProgram, User } from '@premium-hub/db';
-import { formatAmount } from '@premium-hub/shared';
+import type { ReferralProgram, User } from '@pro-ai-access/db';
+import { formatAmount } from '@pro-ai-access/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotifierService } from '../notifier/notifier.service';

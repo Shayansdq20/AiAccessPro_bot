@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Bot, InlineKeyboard } from 'grammy';
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import { PaymentsService } from '../../payments/payments.service';
 import { FulfillmentService } from '../../fulfillment/fulfillment.service';
 import { BotCommonService } from '../bot-common.service';

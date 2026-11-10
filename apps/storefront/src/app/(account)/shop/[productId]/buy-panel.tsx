@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import { quoteAction, checkoutAction } from '@/lib/shop-actions';
 import { DISCOUNT_REASON_FA, type ShopProduct, type Quote, type CheckoutResult } from '@/lib/shop-types';
 

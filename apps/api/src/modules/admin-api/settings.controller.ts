@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
-import { MESSAGES, MESSAGE_KEYS } from '@premium-hub/shared';
+import { MESSAGES, MESSAGE_KEYS } from '@pro-ai-access/shared';
 import { AdminAuthGuard, AdminRequest, Roles } from '../admin-auth/admin-auth.guard';
 import { SettingsService } from '../settings/settings.service';
 import { AuditService } from '../audit/audit.service';

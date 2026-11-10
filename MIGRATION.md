@@ -1,4 +1,4 @@
-# Moving Premium Hub to a new VPS
+# Moving Pro Ai Access to a new VPS
 
 A complete, ordered runbook for migrating the bot + admin panel from one server
 to another with **zero data loss** and minimal downtime. Follow the phases in
@@ -8,25 +8,35 @@ order. Placeholders: `OLD_IP`, `NEW_IP`, and your domains
 > Golden rule: **do NOT stop or wipe the old server until the new one is fully
 > verified** (bot answers `/start`). The old box is your rollback.
 
+> Naming note (brand rename): the current production install predates the
+> rename — its folder is `~/premium-hub` and its `.env` has
+> `POSTGRES_USER/POSTGRES_DB=premium_hub`. **Keep that `.env` as is.** The
+> dump/restore commands below read the DB user/name from the container's own
+> environment, so they work with either name. On the NEW server the folder can
+> be `~/pro-ai-access` because its Postgres volume is created fresh and then
+> filled from the dump. Never rename the folder of a running install — Docker
+> names the volume after the folder, so the database would come up empty.
+
 ---
 
 ## Phase 0 — On the OLD server: back up (don't stop anything yet)
 
 ```sh
-cd ~/premium-hub
+cd ~/premium-hub                    # the OLD install's folder (pre-rename name)
 
 # 1. database dump (all users, wallets, orders, referrals, inventory)
-sudo docker compose exec -T postgres pg_dump -U premium_hub premium_hub \
-  | gzip > ~/premium_hub.sql.gz
+#    single quotes: $POSTGRES_USER/$POSTGRES_DB expand INSIDE the container
+sudo docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' \
+  | gzip > ~/pro_ai_access.sql.gz
 
 # 2. nginx configs + SSL certificates
 sudo tar -czf ~/nginx-backup.tar.gz -C / etc/nginx etc/letsencrypt
 
-# 3. confirm you have all three files to carry over
-ls -lh ~/premium_hub.sql.gz ~/nginx-backup.tar.gz ~/premium-hub/.env
+# 3. confirm you have all three files to carry over (dump must not be ~20 bytes)
+ls -lh ~/pro_ai_access.sql.gz ~/nginx-backup.tar.gz ~/premium-hub/.env
 ```
 
-The three things you must move: **`.env`**, **`premium_hub.sql.gz`**, **`nginx-backup.tar.gz`**.
+The three things you must move: **`.env`**, **`pro_ai_access.sql.gz`**, **`nginx-backup.tar.gz`**.
 The `.env` is critical — it holds `ENCRYPTION_KEY`. If that changes, every
 encrypted VPN config / inventory item / delivery becomes unreadable.
 
@@ -60,12 +70,12 @@ sudo ufw allow OpenSSH && sudo ufw allow 'Nginx Full' && sudo ufw --force enable
 GitHub access for the private repo — SSH deploy key:
 
 ```sh
-ssh-keygen -t ed25519 -C "premium-hub-vps" -f ~/.ssh/id_ed25519 -N ""
+ssh-keygen -t ed25519 -C "pro-ai-access-vps" -f ~/.ssh/id_ed25519 -N ""
 ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Add that public key at `https://github.com/shayansdq/premium-hub/settings/keys`
+Add that public key at `https://github.com/Shayansdq20/AiAccessPro_bot/settings/keys`
 → **Add deploy key** (read-only). Then `ssh -T git@github.com` should greet you.
 
 ---
@@ -75,9 +85,9 @@ Add that public key at `https://github.com/shayansdq/premium-hub/settings/keys`
 From your laptop (or scp directly server-to-server):
 
 ```sh
-scp root@OLD_IP:~/premium_hub.sql.gz   root@NEW_IP:~/
+scp root@OLD_IP:~/pro_ai_access.sql.gz   root@NEW_IP:~/
 scp root@OLD_IP:~/nginx-backup.tar.gz  root@NEW_IP:~/
-scp root@OLD_IP:~/premium-hub/.env     root@NEW_IP:~/premium-hub.env
+scp root@OLD_IP:~/premium-hub/.env     root@NEW_IP:~/pro-ai-access.env
 ```
 
 ---
@@ -85,16 +95,18 @@ scp root@OLD_IP:~/premium-hub/.env     root@NEW_IP:~/premium-hub.env
 ## Phase 3 — On the NEW server: deploy
 
 ```sh
-git clone git@github.com:shayansdq/premium-hub.git ~/premium-hub
-cd ~/premium-hub
-cp ~/premium-hub.env .env          # SAME .env = same ENCRYPTION_KEY (mandatory)
+git clone git@github.com:Shayansdq20/AiAccessPro_bot.git ~/pro-ai-access
+cd ~/pro-ai-access
+cp ~/pro-ai-access.env .env          # SAME .env = same ENCRYPTION_KEY (mandatory)
+                                     # (and same POSTGRES_* — leave them premium_hub)
 
 # 1. start ONLY Postgres first
 COMPOSE_PARALLEL_LIMIT=1 sudo docker compose up -d postgres
 sleep 10
 
 # 2. restore the database BEFORE the API ever boots (order matters!)
-gunzip -c ~/premium_hub.sql.gz | sudo docker compose exec -T postgres psql -U premium_hub -d premium_hub
+gunzip -c ~/pro_ai_access.sql.gz \
+  | sudo docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 
 # 3. now build + start everything (migrations auto-apply on api boot)
 sudo docker compose build api
@@ -140,7 +152,7 @@ Telegram **caches the webhook host's IP** and won't reliably re-resolve after a
 DNS change. Force it by pinning the IP explicitly to the new server:
 
 ```sh
-cd ~/premium-hub
+cd ~/pro-ai-access
 TOKEN=$(grep TELEGRAM_BOT_TOKEN .env | cut -d= -f2-)
 SECRET=$(grep TELEGRAM_WEBHOOK_SECRET .env | cut -d= -f2-)
 SERVER_IP=$(curl -s https://api.ipify.org)

@@ -1,5 +1,5 @@
 {
-  "name": "@premium-hub/admin",
+  "name": "@pro-ai-access/admin",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "echo 'no tests' && exit 0"
   },
   "dependencies": {
-    "@premium-hub/shared": "workspace:*",
+    "@pro-ai-access/shared": "workspace:*",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

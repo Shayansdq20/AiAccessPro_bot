@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { DiscountCode, Prisma } from '@premium-hub/db';
+import type { DiscountCode, Prisma } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export type DiscountValidation =

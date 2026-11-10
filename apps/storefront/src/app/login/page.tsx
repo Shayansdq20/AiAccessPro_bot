@@ -13,7 +13,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 text-2xl font-black text-white">
             P
           </div>
-          <h1 className="text-xl font-black text-white">ورود به پریمیوم هاب</h1>
+          <h1 className="text-xl font-black text-white">ورود به Pro Ai Access</h1>
           <p className="mt-1 text-sm text-slate-400">
             با شماره موبایل وارد شو؛ کد تایید برایت پیامک می‌شود.
           </p>

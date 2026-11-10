@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { toBuffer } from 'qrcode';
-import type { Order, OrderItem, ProductVariant, User } from '@premium-hub/db';
+import type { Order, OrderItem, ProductVariant, User } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from './inventory.service';
 import { NotifierService } from '../notifier/notifier.service';
@@ -16,7 +16,7 @@ import {
   type VpnDeliveryData,
   type VpnLabels,
 } from '../xui/vpn-delivery';
-import { toFaDigits } from '@premium-hub/shared';
+import { toFaDigits } from '@pro-ai-access/shared';
 
 export type FulfillmentOutcome =
   | { kind: 'delivered'; payload: string }

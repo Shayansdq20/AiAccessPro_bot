@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import type { Language, User } from '@premium-hub/db';
+import type { Language, User } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface TelegramIdentity {

@@ -9,8 +9,8 @@ const vazir = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: 'پریمیوم هاب | حساب کاربری',
-  description: 'خرید VPN و سرویس‌های دیجیتال — حساب کاربری پریمیوم هاب',
+  title: 'Pro Ai Access | حساب کاربری',
+  description: 'خرید VPN و سرویس‌های دیجیتال — حساب کاربری Pro Ai Access',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

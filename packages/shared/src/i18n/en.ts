@@ -26,7 +26,7 @@ export const en = {
 
   // Start
   'start.welcome':
-    'Hi {name} 👋\nWelcome to Premium Hub — your store for premium digital services.\nUse the menu below to get started.',
+    'Hi {name} 👋\nWelcome to Pro Ai Access — your store for premium digital services.\nUse the menu below to get started.',
 
   // Catalog
   'catalog.chooseCategory': '🗂 Choose a category:',

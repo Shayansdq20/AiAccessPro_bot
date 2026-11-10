@@ -1,4 +1,4 @@
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import { getOrders, ORDER_STATUS_FA } from '@/lib/account-data';
 import { CopyInline, CopyBox } from '@/components/copyable';
 

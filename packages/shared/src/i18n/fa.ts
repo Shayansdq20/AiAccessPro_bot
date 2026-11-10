@@ -27,7 +27,7 @@ export const fa: Record<MessageKey, string> = {
 
   // Start
   'start.welcome':
-    'سلام {name} 👋\nبه Premium Hub خوش آمدید — فروشگاه سرویس‌های دیجیتال پرمیوم.\nاز منوی پایین شروع کنید.',
+    'سلام {name} 👋\nبه Pro Ai Access خوش آمدید — فروشگاه سرویس‌های دیجیتال پرمیوم.\nاز منوی پایین شروع کنید.',
 
   // Catalog
   'catalog.chooseCategory': '🗂 یک دسته‌بندی انتخاب کنید:',

@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
-import type { User } from '@premium-hub/db';
+import type { User } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { SmsService } from '../sms/sms.service';

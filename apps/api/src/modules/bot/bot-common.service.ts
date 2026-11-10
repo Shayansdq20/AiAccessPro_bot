@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Keyboard } from 'grammy';
-import type { User } from '@premium-hub/db';
-import type { Language, MessageKey } from '@premium-hub/shared';
+import type { User } from '@pro-ai-access/db';
+import type { Language, MessageKey } from '@pro-ai-access/shared';
 import { UsersService } from '../users/users.service';
 import { TextsService } from '../settings/texts.service';
 import { config } from '../../config';

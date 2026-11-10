@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import type { AdminRole } from '@premium-hub/db';
+import type { AdminRole } from '@pro-ai-access/db';
 import { AdminAuthService, AuthenticatedAdmin } from './admin-auth.service';
 
 export const ROLES_KEY = 'admin_roles';

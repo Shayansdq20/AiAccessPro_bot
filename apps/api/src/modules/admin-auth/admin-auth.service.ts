@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap, UnauthorizedException } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 import { createHash, randomBytes } from 'node:crypto';
-import type { AdminRole, AdminUser } from '@premium-hub/db';
+import type { AdminRole, AdminUser } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { config } from '../../config';
 

@@ -7,14 +7,14 @@ WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/storefront/package.json apps/storefront/
-RUN pnpm install --frozen-lockfile --filter @premium-hub/shared --filter @premium-hub/storefront
+RUN pnpm install --frozen-lockfile --filter @pro-ai-access/shared --filter @pro-ai-access/storefront
 
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/storefront apps/storefront
 
-RUN pnpm --filter @premium-hub/shared build \
- && pnpm --filter @premium-hub/storefront build
+RUN pnpm --filter @pro-ai-access/shared build \
+ && pnpm --filter @pro-ai-access/storefront build
 
 # ---------- runtime (Next.js standalone) ----------
 FROM node:22-slim

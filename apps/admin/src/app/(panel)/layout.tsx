@@ -34,7 +34,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white md:hidden">
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden">
-            <span className="text-lg font-bold">💎 Premium Hub</span>
+            <span className="text-lg font-bold">💎 Pro Ai Access</span>
             <span className="rounded-lg border border-slate-300 px-3 py-1 text-sm">☰</span>
           </summary>
           <nav className="max-h-[70vh] space-y-0.5 overflow-y-auto border-t border-slate-100 p-3">
@@ -65,7 +65,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
 
       <aside className="hidden w-60 shrink-0 flex-col border-e border-slate-200 bg-white md:flex">
         <div className="border-b border-slate-200 p-4">
-          <div className="text-lg font-bold">💎 Premium Hub</div>
+          <div className="text-lg font-bold">💎 Pro Ai Access</div>
           <div className="mt-1 text-xs text-slate-500">
             {admin.name} · {admin.role}
           </div>

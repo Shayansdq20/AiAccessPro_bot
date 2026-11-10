@@ -1,6 +1,6 @@
-# CLAUDE.md — Premium Hub
+# CLAUDE.md — Pro Ai Access
 
-Telegram-first digital-services store: NestJS+grammY bot/API, Next.js 15 admin panel (fa/en RTL), Prisma+PostgreSQL, Docker Compose deploy. GitHub: `shayansdq/premium-hub` (private).
+Telegram-first digital-services store: NestJS+grammY bot/API, Next.js 15 admin panel (fa/en RTL), Prisma+PostgreSQL, Docker Compose deploy. GitHub: `Shayansdq20/AiAccessPro_bot` (private).
 
 ## Commands
 
@@ -14,7 +14,7 @@ pnpm dev:admin                       # panel :3000
 cd apps/api && pnpm test             # 21 integration tests (needs postgres container)
 ```
 
-Tests run against a real `premium_hub_test` database (auto-created by `test/global-setup.ts`). Env for tests is injected by `vitest.config.ts` — no `.env` needed.
+Tests run against a real `pro_ai_access_test` database (auto-created by `test/global-setup.ts`). Env for tests is injected by `vitest.config.ts` — no `.env` needed.
 
 ## Architecture (where things live)
 
@@ -59,4 +59,4 @@ Tests run against a real `premium_hub_test` database (auto-created by `test/glob
 
 ## Deploy
 
-VPS: `git pull && COMPOSE_PARALLEL_LIMIT=1 sudo docker compose up -d --build api admin`. Migrations auto-apply on api start (`prisma migrate deploy` in the container CMD). Nginx config: `deploy/nginx/premium-hub.conf`. All ports bind to 127.0.0.1; backups via the `backup` compose service into `./backups/`.
+VPS: `git pull && COMPOSE_PARALLEL_LIMIT=1 sudo docker compose up -d --build api admin`. Migrations auto-apply on api start (`prisma migrate deploy` in the container CMD). Nginx config: `deploy/nginx/pro-ai-access.conf`. All ports bind to 127.0.0.1; backups via the `backup` compose service into `./backups/`.

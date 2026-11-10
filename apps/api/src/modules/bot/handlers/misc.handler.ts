@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Bot, InlineKeyboard } from 'grammy';
-import type { User } from '@premium-hub/db';
-import { formatAmount, parseAmount, toFaDigits } from '@premium-hub/shared';
+import type { User } from '@pro-ai-access/db';
+import { formatAmount, parseAmount, toFaDigits } from '@pro-ai-access/shared';
 import { UsersService } from '../../users/users.service';
 import { WalletService } from '../../wallet/wallet.service';
 import { DiscountsService } from '../../discounts/discounts.service';

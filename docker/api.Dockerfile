@@ -11,21 +11,21 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/db/package.json packages/db/
 COPY apps/api/package.json apps/api/
-RUN pnpm install --frozen-lockfile --filter @premium-hub/shared --filter @premium-hub/db --filter @premium-hub/api
+RUN pnpm install --frozen-lockfile --filter @pro-ai-access/shared --filter @pro-ai-access/db --filter @pro-ai-access/api
 
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY packages/db packages/db
 COPY apps/api apps/api
 
-RUN pnpm --filter @premium-hub/shared build \
- && pnpm --filter @premium-hub/db build \
- && pnpm --filter @premium-hub/api build
+RUN pnpm --filter @pro-ai-access/shared build \
+ && pnpm --filter @pro-ai-access/db build \
+ && pnpm --filter @pro-ai-access/api build
 
 # Replace node_modules with production-only deps, then regenerate the
 # Prisma client (the prod re-link drops the previously generated client).
-RUN pnpm install --prod --frozen-lockfile --filter @premium-hub/shared --filter @premium-hub/db --filter @premium-hub/api \
- && pnpm --filter @premium-hub/db exec prisma generate
+RUN pnpm install --prod --frozen-lockfile --filter @pro-ai-access/shared --filter @pro-ai-access/db --filter @pro-ai-access/api \
+ && pnpm --filter @pro-ai-access/db exec prisma generate
 
 # ---------- runtime ----------
 FROM node:22-slim

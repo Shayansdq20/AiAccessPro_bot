@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { LedgerType, Prisma, WalletLedger } from '@premium-hub/db';
+import type { LedgerType, Prisma, WalletLedger } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export class InsufficientBalanceError extends Error {

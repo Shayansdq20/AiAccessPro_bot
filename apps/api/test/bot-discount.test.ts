@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { MESSAGES, formatAmount } from '@premium-hub/shared';
+import { MESSAGES, formatAmount } from '@pro-ai-access/shared';
 import type { Update } from 'grammy/types';
 import { WalletService } from '../src/modules/wallet/wallet.service';
 import { CatalogService } from '../src/modules/catalog/catalog.service';

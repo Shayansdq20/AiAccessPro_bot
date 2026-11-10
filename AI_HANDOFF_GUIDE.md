@@ -1,6 +1,6 @@
-# Premium Hub — AI/Developer Handoff Guide
+# Pro Ai Access — AI/Developer Handoff Guide
 
-This document describes the system **as actually built** (July 2026 rebuild). It supersedes all earlier drafts. The Persian product spec (`PREMIUM_HUB_AI_PRODUCT_SPEC_FA.md`) remains valid for product intent; where its stack details differ, this file wins. Engineering conventions live in `CLAUDE.md`; day-to-day store operation in `OPERATIONS_GUIDE_FA.md`.
+This document describes the system **as actually built** (July 2026 rebuild). It supersedes all earlier drafts. The Persian product spec (`PRO_AI_ACCESS_AI_PRODUCT_SPEC_FA.md`) remains valid for product intent; where its stack details differ, this file wins. Engineering conventions live in `CLAUDE.md`; day-to-day store operation in `OPERATIONS_GUIDE_FA.md`.
 
 ## Working mode for the next AI
 
@@ -22,7 +22,7 @@ TypeScript everywhere, pnpm monorepo:
 | Deploy | Docker Compose (postgres/api/admin/backup), Nginx + certbot on the VPS |
 | Tests | Vitest integration tests against a real Postgres (21 tests, money + races) |
 
-Repo: `github.com/shayansdq/premium-hub` (private). Production runs on the owner's VPS behind `admin.never-happened.ir` / `api.never-happened.ir` (Nginx template: `deploy/nginx/premium-hub.conf`).
+Repo: `github.com/Shayansdq20/AiAccessPro_bot` (private). Production runs on the owner's VPS behind `admin.never-happened.ir` / `api.never-happened.ir` (Nginx template: `deploy/nginx/pro-ai-access.conf`).
 
 ## Core flows (implemented and verified)
 
@@ -63,11 +63,12 @@ All models in `packages/db/prisma/schema.prisma`. Highlights: `WalletLedger` (im
 ## Deploy runbook
 
 ```sh
-# first time
-gh repo clone shayansdq/premium-hub && cd premium-hub
+# first time (fresh server only — an existing install must keep its folder name,
+# because Docker names the Postgres volume after it; see MIGRATION.md)
+gh repo clone Shayansdq20/AiAccessPro_bot pro-ai-access && cd pro-ai-access
 cp .env.example .env && nano .env       # see README for required values
 COMPOSE_PARALLEL_LIMIT=1 sudo docker compose up -d --build
-# nginx + certbot: deploy/nginx/premium-hub.conf
+# nginx + certbot: deploy/nginx/pro-ai-access.conf
 
 # updates
 git pull && COMPOSE_PARALLEL_LIMIT=1 sudo docker compose up -d --build api admin

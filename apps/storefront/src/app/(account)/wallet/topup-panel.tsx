@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import {
   createManualTopupAction,
   createGatewayTopupAction,

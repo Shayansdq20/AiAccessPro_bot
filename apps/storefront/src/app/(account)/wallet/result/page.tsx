@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 
 export const dynamic = 'force-dynamic';
 

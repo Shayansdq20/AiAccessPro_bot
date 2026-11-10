@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import { getAccount } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-black text-white">سلام، {name} 👋</h1>
-        <p className="mt-1 text-sm text-slate-400">به حساب کاربری پریمیوم هاب خوش آمدی.</p>
+        <p className="mt-1 text-sm text-slate-400">به حساب کاربری Pro Ai Access خوش آمدی.</p>
       </div>
 
       {/* آمار حساب */}

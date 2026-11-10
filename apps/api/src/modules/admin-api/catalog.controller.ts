@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { z } from 'zod';
-import { Prisma } from '@premium-hub/db';
+import { Prisma } from '@pro-ai-access/db';
 import { AdminAuthGuard, AdminRequest, Roles } from '../admin-auth/admin-auth.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';

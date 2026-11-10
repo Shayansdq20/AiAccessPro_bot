@@ -5,7 +5,7 @@ import {
   MESSAGES,
   MessageKey,
   renderTemplate,
-} from '@premium-hub/shared';
+} from '@pro-ai-access/shared';
 import { SettingsService } from './settings.service';
 
 /** Menu actions routable from the reply keyboard. */

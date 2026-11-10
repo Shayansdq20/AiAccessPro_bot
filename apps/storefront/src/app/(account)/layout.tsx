@@ -19,7 +19,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-cyan-400 text-lg font-black text-white">
               P
             </span>
-            <span className="font-extrabold text-white">پریمیوم هاب</span>
+            <span className="font-extrabold text-white">Pro Ai Access</span>
           </Link>
           <form action={logoutAction}>
             <button className="btn-ghost text-sm" type="submit">

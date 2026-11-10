@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { decryptPayload, encryptPayload } from '@premium-hub/db';
+import { decryptPayload, encryptPayload } from '@pro-ai-access/db';
 import { WalletService } from '../src/modules/wallet/wallet.service';
 import { XuiService } from '../src/modules/xui/xui.service';
 import { CatalogService } from '../src/modules/catalog/catalog.service';

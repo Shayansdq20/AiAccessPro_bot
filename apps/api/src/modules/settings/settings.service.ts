@@ -4,7 +4,7 @@ import {
   DEFAULT_MANUAL_PAYMENT_SETTINGS,
   ManualPaymentSettings,
   SETTING_KEYS,
-} from '@premium-hub/shared';
+} from '@pro-ai-access/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const CACHE_TTL_MS = 60_000;

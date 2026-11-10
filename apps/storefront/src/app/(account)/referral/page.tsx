@@ -1,4 +1,4 @@
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import { getReferral } from '@/lib/account-data';
 import { CopyInline } from '@/components/copyable';
 

@@ -12,7 +12,7 @@ export default defineConfig({
     hookTimeout: 60_000,
     env: {
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://premium_hub:premium_hub@localhost:5433/premium_hub_test?schema=public',
+      DATABASE_URL: 'postgresql://pro_ai_access:pro_ai_access@localhost:5433/pro_ai_access_test?schema=public',
       ENCRYPTION_KEY: 'test-encryption-key',
       JWT_SECRET: 'test-jwt-secret',
       SESSION_SECRET: 'test-session-secret',

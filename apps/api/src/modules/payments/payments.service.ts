@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InlineKeyboard } from 'grammy';
-import type { Payment, User } from '@premium-hub/db';
-import { formatAmount } from '@premium-hub/shared';
+import type { Payment, User } from '@pro-ai-access/db';
+import { formatAmount } from '@pro-ai-access/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotifierService } from '../notifier/notifier.service';
@@ -245,7 +245,7 @@ export class PaymentsService {
     });
     const requested = await this.zarinpal.request({
       amountToman: amount,
-      description: `Premium Hub wallet top-up #${payment.number}`,
+      description: `Pro Ai Access wallet top-up #${payment.number}`,
     });
     if (!requested) {
       await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'failed' } });

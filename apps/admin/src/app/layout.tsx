@@ -3,8 +3,8 @@ import { getDict } from '@/lib/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Premium Hub Admin',
-  description: 'Premium Hub administration panel',
+  title: 'Pro Ai Access Admin',
+  description: 'Pro Ai Access administration panel',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

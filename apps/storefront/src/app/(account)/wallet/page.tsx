@@ -1,4 +1,4 @@
-import { formatAmount } from '@premium-hub/shared';
+import { formatAmount } from '@pro-ai-access/shared';
 import { getAccount } from '@/lib/api';
 import { getTopupOptions, getPayments, PAYMENT_STATUS_FA } from '@/lib/topup';
 import { getLedger } from '@/lib/account-data';

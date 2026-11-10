@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@premium-hub/db';
-import { decryptPayload, encryptPayload } from '@premium-hub/db';
+import type { Prisma } from '@pro-ai-access/db';
+import { decryptPayload, encryptPayload } from '@pro-ai-access/db';
 import { PrismaService } from '../../prisma/prisma.service';
 import { config } from '../../config';
 

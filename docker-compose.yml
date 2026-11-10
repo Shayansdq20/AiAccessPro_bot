@@ -3,16 +3,16 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-premium_hub}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-premium_hub}
-      POSTGRES_DB: ${POSTGRES_DB:-premium_hub}
+      POSTGRES_USER: ${POSTGRES_USER:-pro_ai_access}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pro_ai_access}
+      POSTGRES_DB: ${POSTGRES_DB:-pro_ai_access}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       # Localhost only — never expose Postgres publicly.
       - "127.0.0.1:5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-premium_hub} -d ${POSTGRES_DB:-premium_hub}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pro_ai_access} -d ${POSTGRES_DB:-pro_ai_access}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -27,7 +27,7 @@ services:
         condition: service_healthy
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-premium_hub}:${POSTGRES_PASSWORD:-premium_hub}@postgres:5432/${POSTGRES_DB:-premium_hub}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pro_ai_access}:${POSTGRES_PASSWORD:-pro_ai_access}@postgres:5432/${POSTGRES_DB:-pro_ai_access}?schema=public
       NODE_ENV: production
     ports:
       # Localhost only — Nginx terminates TLS and proxies to this port.
@@ -77,12 +77,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:-premium_hub}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-pro_ai_access}
     volumes:
       - ./backups:/backups
     entrypoint: >
       /bin/sh -c 'while true; do
-        pg_dump -h postgres -U ${POSTGRES_USER:-premium_hub} ${POSTGRES_DB:-premium_hub} | gzip > /backups/premium_hub_$$(date +%Y%m%d_%H%M%S).sql.gz;
+        pg_dump -h postgres -U ${POSTGRES_USER:-pro_ai_access} ${POSTGRES_DB:-pro_ai_access} | gzip > /backups/pro_ai_access_$$(date +%Y%m%d_%H%M%S).sql.gz;
         find /backups -name "*.sql.gz" -mtime +14 -delete;
         sleep 86400;
       done'

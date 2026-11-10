@@ -5,7 +5,7 @@ export type AdminLang = 'fa' | 'en';
 export const LANG_COOKIE = 'admin_lang';
 
 const en = {
-  appName: 'Premium Hub Admin',
+  appName: 'Pro Ai Access Admin',
   login: 'Login',
   email: 'Email',
   password: 'Password',
@@ -158,7 +158,7 @@ const en = {
 };
 
 const fa: typeof en = {
-  appName: 'پنل ادمین Premium Hub',
+  appName: 'پنل ادمین Pro Ai Access',
   login: 'ورود',
   email: 'ایمیل',
   password: 'رمز عبور',
